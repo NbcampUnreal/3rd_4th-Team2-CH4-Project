@@ -11,5 +11,11 @@ UCLASS()
 class TEAM02_API ATNpcController : public AAIController
 {
 	GENERATED_BODY()
+
+public:
+	ATNpcController();
+
+protected:
+	virtual void BeginPlay() override;
 	
 };

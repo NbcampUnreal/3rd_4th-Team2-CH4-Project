@@ -1,23 +1,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
+#include "TNpcBase.h"
 #include "TNpcCharacter.generated.h"
 
 UCLASS()
-class TEAM02_API ATNpcCharacter : public ACharacter
+class TEAM02_API ATNpcCharacter : public ATNpcBase
 {
 	GENERATED_BODY()
 
 public:
 	ATNpcCharacter();
-
-protected:
-	virtual void BeginPlay() override;
-
-public:	
-	virtual void Tick(float DeltaTime) override;
 	
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
 };
