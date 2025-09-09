@@ -17,5 +17,17 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+private:
+	void OnPatrolTimerElapsed();
+
+public:
+	FTimerHandle PatrolTimerHandle;
+
+	static const float PatrolRepeatInterval;
+
+	static const float PatrolRadius;
 	
 };
