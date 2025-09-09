@@ -1,0 +1,39 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Actor.h"
+#include "TSpeedup.generated.h"
+
+class ACharacter;
+class USphereComponent;
+
+UCLASS()
+class TEAM02_API ATSpeedup : public AActor
+{
+	GENERATED_BODY()
+	
+public:	
+	ATSpeedup();
+
+protected:
+	virtual void BeginPlay() override;
+
+	void RemoveSpeedBuff();
+
+private:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USphereComponent> SphereComponent;
+
+	UPROPERTY(EditAnywhere, Category = "Gimmick")
+	float SpeedMultiplier = 1.5f;
+
+	UPROPERTY(EditAnywhere, Category = "Gimmick")
+	float BuffDuration = 3.0f;
+
+	FTimerHandle SpeedBuffTimerHandle;
+
+	UPROPERTY()
+	TMap<TWeakObjectPtr<ACharacter>, float> AffectedCharacters;
+};
