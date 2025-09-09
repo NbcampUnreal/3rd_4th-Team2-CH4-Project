@@ -1,48 +1,78 @@
 #include "NPC/TNpcController.h"
 #include "NavigationSystem.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
+#include "BehaviorTree/BehaviorTree.h"
+#include "BehaviorTree/BlackboardData.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
 
-const float ATNpcController::PatrolRepeatInterval(3.f);
 const float ATNpcController::PatrolRadius(500.f);
+int32 ATNpcController::ShowAIDebug(0);
+const FName ATNpcController::StartPatrolPositionKey(TEXT("StartPatrolPosition"));
+const FName ATNpcController::EndPatrolPositionKey(TEXT("EndPatrolPosition"));
+
+FAutoConsoleVariableRef CVarShowAIDebug(
+	TEXT("NXProject.ShowAIDebug"),
+	ATNpcController::ShowAIDebug,
+	TEXT(""),
+	ECVF_Cheat);
 
 ATNpcController::ATNpcController()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	UE_LOG(LogTemp,Warning,TEXT("TNpcController Constructor Called"));
+	
+	Blackboard=CreateDefaultSubobject<UBlackboardComponent>(TEXT("Blackboard"));
+	BrainComponent=CreateDefaultSubobject<UBehaviorTreeComponent>(TEXT("BrainComponent"));
 }
 
 void ATNpcController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (HasAuthority())
+	if (HasAuthority()==true)
 	{
-		GetWorld()->GetTimerManager().SetTimer(
-			PatrolTimerHandle,this,&ThisClass::OnPatrolTimerElapsed,
-			PatrolRepeatInterval,true);
+		APawn* ControlledPawn=GetPawn();
+		if (IsValid(ControlledPawn)==true)
+		{
+			BeginAI(ControlledPawn);
+		}
 	}
-	
 }
 
 void ATNpcController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	GetWorld()->GetTimerManager().ClearTimer(PatrolTimerHandle);
+	EndAI();
 	Super::EndPlay(EndPlayReason);
 }
 
-void ATNpcController::OnPatrolTimerElapsed()
+void ATNpcController::BeginAI(APawn* InPawn)
 {
-	APawn* ControlledPawn=GetPawn();
-	if (IsValid(ControlledPawn)==true)
+	UBlackboardComponent* BlackboardComponent = Cast<UBlackboardComponent>(Blackboard);
+	if (IsValid(BlackboardComponent)==true)
 	{
-		UNavigationSystemV1* NavigationSystem=UNavigationSystemV1::GetNavigationSystem(GetWorld());
-		if (IsValid(NavigationSystem)==true)
+		if (UseBlackboard(BlackboardDataAsset,BlackboardComponent)==true)
 		{
-			FVector ActorLocation=ControlledPawn->GetActorLocation();
-			FNavLocation NextLocation;
-			if (NavigationSystem->GetRandomPointInNavigableRadius(ActorLocation,PatrolRadius,NextLocation)==true)
-			{
-				UAIBlueprintHelperLibrary::SimpleMoveToLocation(this,NextLocation.Location);
-			}
+			bool bRunSucceeded=RunBehaviorTree(BehaviorTree);
+			checkf(bRunSucceeded==true,TEXT("Fail to run behavior tree"));
+			BlackboardComponent->SetValueAsVector(StartPatrolPositionKey,InPawn->GetActorLocation());
+		}
+		if (ShowAIDebug==1)
+		{
+			UKismetSystemLibrary::PrintString(this,FString::Printf(TEXT("BeginAI")));
+		}
+	}
+}
+
+void ATNpcController::EndAI()
+{
+	UBehaviorTreeComponent* BehaviorTreeComponent=Cast<UBehaviorTreeComponent>(BrainComponent);
+	if (IsValid(BehaviorTreeComponent)==true)
+	{
+		BehaviorTreeComponent->StopTree();
+
+		if (ShowAIDebug==1)
+		{
+			UKismetSystemLibrary::PrintString(this,FString::Printf(TEXT("EndAI")));
 		}
 	}
 }

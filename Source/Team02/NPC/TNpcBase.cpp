@@ -13,6 +13,9 @@ ATNpcBase::ATNpcBase()
 	AutoPossessAI=EAutoPossessAI::PlacedInWorldOrSpawned; // AI컨르롤러 할당
 	AutoPossessPlayer=EAutoReceiveInput::Disabled; // 플레이어 입력방지
 	GetCharacterMovement()->SetIsReplicated(true); //네트워크 동기화
+	SetReplicateMovement(true);
+	//NetCullDistanceSquared=150000.f;
+	
 	
 	float CharacterHalfHeight=90.f;
 	float CharacterRadius=40.f;

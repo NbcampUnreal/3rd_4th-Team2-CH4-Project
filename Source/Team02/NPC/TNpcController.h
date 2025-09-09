@@ -4,6 +4,9 @@
 #include "AIController.h"
 #include "TNpcController.generated.h"
 
+class UBlackboardData;
+class UBehaviorTree;
+
 /**
  * 
  */
@@ -17,17 +20,22 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-
-private:
-	void OnPatrolTimerElapsed();
+	void BeginAI(APawn* InPawn);
+	void EndAI();
 
 public:
-	FTimerHandle PatrolTimerHandle;
-
-	static const float PatrolRepeatInterval;
-
 	static const float PatrolRadius;
+	static int32 ShowAIDebug;
+
+	static const FName StartPatrolPositionKey;
+	static const FName EndPatrolPositionKey;
+
+private:
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Meta=(AllowPrivateAccess))
+	TObjectPtr<UBlackboardData> BlackboardDataAsset;
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Meta=(AllowPrivateAccess))
+	TObjectPtr<UBehaviorTree> BehaviorTree;
 	
 };
