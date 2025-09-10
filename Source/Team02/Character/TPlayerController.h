@@ -10,7 +10,7 @@
 class UInputAction;
 class UInputMappingContext;
 /**
- * 
+ *
  */
 UCLASS()
 class TEAM02_API ATPlayerController : public APlayerController
@@ -30,5 +30,7 @@ public:
 	TObjectPtr<UInputAction> LookAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	TObjectPtr<UInputAction> SprintAction;
-	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	TObjectPtr<UInputAction> AttackAction;
+
 };
