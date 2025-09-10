@@ -30,6 +30,8 @@ public:
 
 	static const FName StartPatrolPositionKey;
 	static const FName EndPatrolPositionKey;
+	static const FName PersonalityTypeKey; // 성격유형키 (조급함,보통,여유로움)
+	static const FName WaitTimeKey;
 
 private:
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Meta=(AllowPrivateAccess))

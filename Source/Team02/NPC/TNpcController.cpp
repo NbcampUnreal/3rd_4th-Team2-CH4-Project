@@ -10,6 +10,8 @@ const float ATNpcController::PatrolRadius(500.f);
 int32 ATNpcController::ShowAIDebug(0);
 const FName ATNpcController::StartPatrolPositionKey(TEXT("StartPatrolPosition"));
 const FName ATNpcController::EndPatrolPositionKey(TEXT("EndPatrolPosition"));
+const FName ATNpcController::PersonalityTypeKey(TEXT("PersonalityType"));
+const FName ATNpcController::WaitTimeKey(TEXT("WaitTime"));
 
 FAutoConsoleVariableRef CVarShowAIDebug(
 	TEXT("NXProject.ShowAIDebug"),
@@ -55,6 +57,10 @@ void ATNpcController::BeginAI(APawn* InPawn)
 			bool bRunSucceeded=RunBehaviorTree(BehaviorTree);
 			checkf(bRunSucceeded==true,TEXT("Fail to run behavior tree"));
 			BlackboardComponent->SetValueAsVector(StartPatrolPositionKey,InPawn->GetActorLocation());
+
+			//성격 유형 추가 (0=여유로움,1=보통,2=조급함)
+			int32 RandomPersonalityType=FMath::RandRange(0,2);
+			BlackboardComponent->SetValueAsInt(PersonalityTypeKey,RandomPersonalityType);
 		}
 		if (ShowAIDebug==1)
 		{
