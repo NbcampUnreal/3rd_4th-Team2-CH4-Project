@@ -1,6 +1,7 @@
 // TUPlayerController.cpp
 
 #include "OutGameUI/TUPlayerController.h"
+#include "OutGameUI/TGameModeBase_Lobby.h"
 #include "LobbyWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "TPlayerState.h"
@@ -18,8 +19,7 @@ void ATUPlayerController::BeginPlay()
 	Super::BeginPlay();
 
 	if (!IsLocalController()) return;
-
-	// 로비 위젯 바로 생성/표시
+	
 	if (LobbyWidgetClass)
 	{
 		LobbyWidgetInstance = CreateWidget<ULobbyWidget>(this, LobbyWidgetClass);
@@ -27,19 +27,16 @@ void ATUPlayerController::BeginPlay()
 		{
 			LobbyWidgetInstance->AddToPlayerScreen(10000);
 			LobbyWidgetInstance->SetVisibility(ESlateVisibility::Visible);
-
-			// 첫 화면 값 갱신
+			
 			RefreshLobbyFromPS();
-
-			// 입력을 UI로
+			
 			FInputModeUIOnly UIOnly;
 			UIOnly.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 			SetInputMode(UIOnly);
 			bShowMouseCursor = true;
 		}
 	}
-
-	// (선택) 로비에서 Pawn이 없으면 화면이 검정 → 임시 카메라 잡기
+	
 	for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
 	{
 		SetViewTargetWithBlend(*It, 0.f);
@@ -66,11 +63,48 @@ void ATUPlayerController::Server_CycleTeam_Implementation()
 	}
 }
 
-void ATUPlayerController::Server_ToggleReady_Implementation()
+/*void ATUPlayerController::Server_ToggleReady_Implementation()
 {
 	if (ATPlayerState* TPS = GetPlayerState<ATPlayerState>())
 	{
 		TPS->SetReady(!TPS->bReady); 
+	}
+	
+	if (HasAuthority())
+	{
+		if (ATGameModeBase_Lobby* GM = GetWorld()->GetAuthGameMode<ATGameModeBase_Lobby>())
+		{
+			GM->RecountLobbyAndMaybeStart();
+		}
+	}
+}*/
+
+void ATUPlayerController::Server_SetReady_Implementation(bool bReadyDesired)
+{
+	if (ATPlayerState* TPS = GetPlayerState<ATPlayerState>())
+	{
+		if (TPS->bReady != bReadyDesired)
+		{
+			TPS->SetReady(bReadyDesired);
+		}
+	}
+	
+	if (ATGameModeBase_Lobby* GM = GetWorld()->GetAuthGameMode<ATGameModeBase_Lobby>())
+	{
+		GM->RecountLobbyAndMaybeStart();
+	}
+}
+
+void ATUPlayerController::ToggleReady()
+{
+	if (ATPlayerState* TPS = GetPlayerState<ATPlayerState>())
+	{
+		const bool NewReady = !TPS->bReady;
+		Server_SetReady(NewReady);
+	}
+	else
+	{
+		Server_SetReady(true);
 	}
 }
 

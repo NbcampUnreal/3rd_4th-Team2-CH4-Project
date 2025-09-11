@@ -12,12 +12,12 @@ void ATPlayerState::SetTeam(ETeam NewTeam)
 	if (HasAuthority())
 	{
 		Team = NewTeam;
-		OnRep_Team();       // 서버 로컬 즉시 UI 반영
-		ForceNetUpdate();   // 복제 빠르게
+		OnRep_Team();
+		ForceNetUpdate();
 	}
 	else
 	{
-		ServerSetTeam(NewTeam); // ★ 클라 → 서버
+		ServerSetTeam(NewTeam);
 	}
 }
 
@@ -31,17 +31,16 @@ void ATPlayerState::SetReady(bool bInReady)
 	}
 	else
 	{
-		ServerSetReady(bInReady); // ★ 클라 → 서버
+		ServerSetReady(bInReady);
 	}
 }
 
-/** ===== 서버 RPC 구현 필수 (_Implementation) ===== */
 void ATPlayerState::ServerSetTeam_Implementation(ETeam NewTeam)
 {
 	if (Team != NewTeam)
 	{
 		Team = NewTeam;
-		OnRep_Team();      // 서버에서도 즉시 반영
+		OnRep_Team();
 		ForceNetUpdate();
 	}
 }
@@ -55,10 +54,8 @@ void ATPlayerState::ServerSetReady_Implementation(bool bInReady)
 	}
 }
 
-/** ===== RepNotify: 클라에서 UI 갱신 트리거 ===== */
 void ATPlayerState::OnRep_Team()
 {
-	// (선호) 델리게이트로도 알림 주기
 	OnLobbyStatusChanged.Broadcast();
 
 	if (APlayerController* PC = Cast<APlayerController>(GetOwner()))

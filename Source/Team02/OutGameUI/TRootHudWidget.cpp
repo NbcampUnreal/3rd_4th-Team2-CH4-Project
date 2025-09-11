@@ -30,8 +30,7 @@ void UTRootHudWidget::NativeConstruct()
             {
                 LobbyWidget->RemoveFromParent();
             }
-
-            // 이름을 Slot → AddedSlot 으로 변경
+            
             if (UOverlaySlot* AddedSlot = RootOverlay->AddChildToOverlay(LobbyWidget))
             {
                 AddedSlot->SetHorizontalAlignment(HAlign_Fill);

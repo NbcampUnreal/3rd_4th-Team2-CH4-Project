@@ -12,6 +12,8 @@ UENUM(BlueprintType)
 enum class EMatchPhase : uint8
 {
 	Waiting,
+	Countdown,  
+	Traveling,
 	Loading,
 	InGame,
 	RoundEnd,
@@ -56,7 +58,25 @@ public:
 	// 리플리케이션 등록
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	// 서버에서만 호출: N초 카운트다운 시작. 0이 되면 GameMode에 트래블 요청
+	void StartCountdown(int32 Seconds);
+
+	// 서버에서만 호출: 카운트다운 취소하고 대기 상태로 복귀
+	void CancelCountdown();
+
 protected:
+	UFUNCTION()
+	void OnRep_LobbyCountdown();
+
+	// === [추가] 1초 주기 타이머 콜백 ===
+	void TickCountdown();
+
+	// === [추가] 타이머 핸들(서버 전용) ===
+	FTimerHandle CountdownHandle;
+
+	// === [추가] 카운트다운 완료 시 GameMode에 알림(시작 트래블) ===
+	void NotifyCountdownFinished();
+	
 	// RepNotify
 	UFUNCTION() void OnRep_Phase();
 	UFUNCTION() void OnRep_Counts();

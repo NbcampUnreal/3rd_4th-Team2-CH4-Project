@@ -123,7 +123,7 @@ void ULobbyWidget::OnClickReady()
 {
 	if (ATUPlayerController* PC = GetTUPlayerController())
 	{
-		PC->Server_ToggleReady();
+		PC->ToggleReady();
 	}
 }
 
