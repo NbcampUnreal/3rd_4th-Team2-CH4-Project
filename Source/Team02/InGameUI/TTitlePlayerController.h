@@ -17,6 +17,9 @@ public:
 
 	void JoinServer(const FString& InIPAddress);
 
+	UFUNCTION(Server, Reliable)
+	void Server_RequestEnterLobby();  
+	
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = ASUIPlayerController, Meta = (AllowPrivateAccess))
 	TSubclassOf<UUserWidget> UIWidgetClass;
