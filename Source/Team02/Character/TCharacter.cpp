@@ -80,49 +80,49 @@ void ATCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 void ATCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(ATCharacter, Team);
+	/*DOREPLIFETIME(ATCharacter);*/
 }
 
-void ATCharacter::ServerSetTeam_Implementation(ETeam NewTeam)
-{
-	if (Team != NewTeam)
-	{
-		Team = NewTeam;
-		ApplyTeamAppearance();
-	}
+//void ATCharacter::ServerSetTeam_Implementation(ETeam NewTeam)
+//{
+//	if (Team != NewTeam)
+//	{
+//		Team = NewTeam;
+//		ApplyTeamAppearance();
+//	}
+//
+//}
 
-}
+//void ATCharacter::OnRep_Team()
+//{
+//	ApplyTeamAppearance();
+//}
 
-void ATCharacter::OnRep_Team()
-{
-	ApplyTeamAppearance();
-}
-
-void ATCharacter::ApplyTeamAppearance()
-{
-	USkeletalMeshComponent* MeshComp = GetMesh();
-	if (!MeshComp)
-	{
-		return;
-	}
-	USkeletalMesh* NewMesh = nullptr;
-	switch (Team)
-	{
-	case ETeam::TeamP: NewMesh = TeamPMesh; break;
-	case ETeam::TeamD: NewMesh = TeamDMesh; break;
-	default: break;
-	}
-	if (NewMesh && MeshComp->GetSkeletalMeshAsset() != NewMesh)
-	{
-		MeshComp->SetSkeletalMesh(NewMesh, /*bReinitPose*/ true);
-	}
-}
+//void ATCharacter::ApplyTeamAppearance()
+//{
+//	USkeletalMeshComponent* MeshComp = GetMesh();
+//	if (!MeshComp)
+//	{
+//		return;
+//	}
+//	USkeletalMesh* NewMesh = nullptr;
+//	switch (Team)
+//	{
+//	case ETeam::TeamP: NewMesh = TeamPMesh; break;
+//	case ETeam::TeamD: NewMesh = TeamDMesh; break;
+//	default: break;
+//	}
+//	if (NewMesh && MeshComp->GetSkeletalMeshAsset() != NewMesh)
+//	{
+//		MeshComp->SetSkeletalMesh(NewMesh, /*bReinitPose*/ true);
+//	}
+//}
 
 void ATCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	ApplyTeamAppearance();
+	/*ApplyTeamAppearance();*/
 }
 
 void ATCharacter::Tick(float DeltaTime)

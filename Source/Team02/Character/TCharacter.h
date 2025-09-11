@@ -12,12 +12,12 @@ class USkeletalMesh;
 
 struct FInputActionValue;
 
-UENUM(BlueprintType)
-enum class ETeam : uint8
-{
-	TeamP UMETA(DisplayName = "TeamP"),
-	TeamD UMETA(DisplayName = "TeamD")
-};
+//UENUM(BlueprintType)
+//enum class ETeam : uint8
+//{
+//	TeamP UMETA(DisplayName = "TeamP"),
+//	TeamD UMETA(DisplayName = "TeamD")
+//};
 
 UCLASS()
 class TEAM02_API ATCharacter : public ACharacter
@@ -66,19 +66,19 @@ protected:
 
 	// Server
 
-	UPROPERTY(ReplicatedUsing = OnRep_Team, EditAnywhere, BlueprintReadOnly, Category = "Team")
-	ETeam Team = ETeam::TeamP;
+	/*UPROPERTY(ReplicatedUsing = OnRep_Team, EditAnywhere, BlueprintReadOnly, Category = "Team")
+	ETeam Team = ETeam::TeamP;*/
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Team")
+	/*UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Team")
 	TObjectPtr<USkeletalMesh> TeamPMesh;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Team")
-	TObjectPtr<USkeletalMesh> TeamDMesh;
+	TObjectPtr<USkeletalMesh> TeamDMesh;*/
 
-	UFUNCTION()
-	void OnRep_Team();
-	UFUNCTION(Server, Reliable)
-	void ServerSetTeam(ETeam NewTeam);
-	void ApplyTeamAppearance();
+	//UFUNCTION()
+	//void OnRep_Team();
+	//UFUNCTION(Server, Reliable)
+	//void ServerSetTeam(ETeam NewTeam);
+	//void ApplyTeamAppearance();
 	UFUNCTION(Server, Reliable)
 	void ServerAttack();
 	void PerformAttack();
