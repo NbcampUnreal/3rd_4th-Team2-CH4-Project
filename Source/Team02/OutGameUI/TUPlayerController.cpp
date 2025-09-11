@@ -1,11 +1,12 @@
 // TUPlayerController.cpp
 
-
 #include "OutGameUI/TUPlayerController.h"
-
-#include "TRootHUDWidget.h"
+#include "LobbyWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "TPlayerState.h"
+#include "EngineUtils.h"
+#include "Camera/CameraActor.h"
+#include "TGameStateBase_Lobby.h"
 
 ATUPlayerController::ATUPlayerController()
 {
@@ -16,20 +17,43 @@ void ATUPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (IsLocalController() && RootHUDClass)
+	if (!IsLocalController()) return;
+
+	// 로비 위젯 바로 생성/표시
+	if (LobbyWidgetClass)
 	{
-		RootHUD = CreateWidget<UTRootHudWidget>(this, RootHUDClass);
-		if (RootHUD)
+		LobbyWidgetInstance = CreateWidget<ULobbyWidget>(this, LobbyWidgetClass);
+		if (LobbyWidgetInstance)
 		{
-			RootHUD->AddToViewport();
+			LobbyWidgetInstance->AddToPlayerScreen(10000);
+			LobbyWidgetInstance->SetVisibility(ESlateVisibility::Visible);
+
+			// 첫 화면 값 갱신
 			RefreshLobbyFromPS();
 
-			// 로비에서 마우스 사용(원하면)
+			// 입력을 UI로
 			FInputModeUIOnly UIOnly;
 			UIOnly.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 			SetInputMode(UIOnly);
 			bShowMouseCursor = true;
 		}
+	}
+
+	// (선택) 로비에서 Pawn이 없으면 화면이 검정 → 임시 카메라 잡기
+	for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
+	{
+		SetViewTargetWithBlend(*It, 0.f);
+		break;
+	}
+
+	if (ATPlayerState* TPS = GetPlayerState<ATPlayerState>())
+	{
+		TPS->OnLobbyStatusChanged.AddUObject(this, &ATUPlayerController::RefreshLobbyFromPS);
+	}
+
+	if (auto* GS = GetWorld()->GetGameState<ATGameStateBase_Lobby>())
+	{
+		GS->OnLobbyCountsChanged.AddUObject(this, &ATUPlayerController::RefreshLobbyFromPS);
 	}
 }
 
@@ -37,7 +61,8 @@ void ATUPlayerController::Server_CycleTeam_Implementation()
 {
 	if (ATPlayerState* TPS = GetPlayerState<ATPlayerState>())
 	{
-		TPS->SetTeam(GetNextTeam(TPS->Team));
+		const ETeam Next = GetNextTeam(TPS->Team);
+		TPS->SetTeam(Next);          
 	}
 }
 
@@ -45,15 +70,15 @@ void ATUPlayerController::Server_ToggleReady_Implementation()
 {
 	if (ATPlayerState* TPS = GetPlayerState<ATPlayerState>())
 	{
-		TPS->SetReady(!TPS->bReady);
+		TPS->SetReady(!TPS->bReady); 
 	}
 }
 
 void ATUPlayerController::RefreshLobbyFromPS()
 {
-	if (IsLocalController() && RootHUD)
+	if (IsLocalController() && LobbyWidgetInstance)
 	{
-		RootHUD->RefreshLobby();
+		LobbyWidgetInstance->RefreshUI();
 	}
 }
 

@@ -7,7 +7,7 @@
 #include "TTeamTypes.h"
 #include "TUPlayerController.generated.h"
 
-class UTRootHudWidget;
+class ULobbyWidget;
 
 UCLASS()
 class TEAM02_API ATUPlayerController : public APlayerController
@@ -18,11 +18,12 @@ public:
 	ATUPlayerController();
 	virtual void BeginPlay() override;
 
-	/** 루트 HUD BP 클래스 할당 */
+	/** 바로 띄울 로비 위젯 BP 클래스 (WBP_LobbyWidget 지정) */
 	UPROPERTY(EditDefaultsOnly, Category="UI")
-	TSubclassOf<UTRootHudWidget> RootHUDClass;
+	TSubclassOf<ULobbyWidget> LobbyWidgetClass;
 
-	UPROPERTY() TObjectPtr<UTRootHudWidget> RootHUD = nullptr;
+	/** 런타임 인스턴스 */
+	UPROPERTY() TObjectPtr<ULobbyWidget> LobbyWidgetInstance = nullptr;
 
 	/** ---- 클라→서버: 로비 버튼 입력 ---- */
 	UFUNCTION(Server, Reliable) void Server_CycleTeam();

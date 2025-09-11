@@ -6,7 +6,8 @@
 #include "Blueprint/UserWidget.h"
 #include "LobbyWidget.generated.h"
 
-class UButton; class UTextBlock;
+class UButton; class UTextBlock; class UHorizontalBox;
+class UVerticalBox;
 
 UCLASS()
 class TEAM02_API ULobbyWidget : public UUserWidget
@@ -22,7 +23,12 @@ public:
 	UPROPERTY(meta=(BindWidget)) UTextBlock* TxtTeam = nullptr;
 	UPROPERTY(meta=(BindWidget)) UTextBlock* TxtReady = nullptr;
 
+	UPROPERTY(meta=(BindWidget)) UTextBlock* TxtTotals = nullptr;
+	UPROPERTY(meta=(BindWidget)) UVerticalBox* VBoxPlayers = nullptr;
+	
 	UFUNCTION(BlueprintCallable) void RefreshUI();
+
+	UPROPERTY(meta=(BindWidget)) class UHorizontalBox* HBoxButtons = nullptr;
 
 private:
 	UFUNCTION() void OnClickTeam();
