@@ -10,6 +10,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/SkeletalMesh.h"
+#include "OutGameUI/TPlayerState.h"
+#include "OutGameUI/TTeamTypes.h"
 
 // Sets default values
 ATCharacter::ATCharacter()
@@ -77,52 +79,98 @@ void ATCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	}
 }
 
-void ATCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	/*DOREPLIFETIME(ATCharacter);*/
-}
-
-//void ATCharacter::ServerSetTeam_Implementation(ETeam NewTeam)
-//{
-//	if (Team != NewTeam)
-//	{
-//		Team = NewTeam;
-//		ApplyTeamAppearance();
-//	}
-//
-//}
-
-//void ATCharacter::OnRep_Team()
-//{
-//	ApplyTeamAppearance();
-//}
-
-//void ATCharacter::ApplyTeamAppearance()
-//{
-//	USkeletalMeshComponent* MeshComp = GetMesh();
-//	if (!MeshComp)
-//	{
-//		return;
-//	}
-//	USkeletalMesh* NewMesh = nullptr;
-//	switch (Team)
-//	{
-//	case ETeam::TeamP: NewMesh = TeamPMesh; break;
-//	case ETeam::TeamD: NewMesh = TeamDMesh; break;
-//	default: break;
-//	}
-//	if (NewMesh && MeshComp->GetSkeletalMeshAsset() != NewMesh)
-//	{
-//		MeshComp->SetSkeletalMesh(NewMesh, /*bReinitPose*/ true);
-//	}
-//}
-
 void ATCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	BindTeamDelegate();
+	SyncTeamAppearance();
+}
 
-	/*ApplyTeamAppearance();*/
+void ATCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	BindTeamDelegate();
+	SyncTeamAppearance();
+}
+void ATCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	BindTeamDelegate();
+	SyncTeamAppearance();
+}
+
+void ATCharacter::BindTeamDelegate()
+{
+	ATPlayerState* PS = GetPlayerState<ATPlayerState>();
+	if (!PS) return;
+
+	// PlayerState가 바뀌었으면 새로 바인딩
+	if (BoundPlayerState.Get() != PS)
+	{
+		// 기존 것은 TWeakObjectPtr 로 자연소멸 (Unbind 불필요 - AddUObject 는 객체 파괴 시 자동 해제)
+		PS->OnLobbyStatusChanged.AddUObject(this, &ATCharacter::SyncTeamAppearance);
+		BoundPlayerState = PS;
+	}
+}
+
+void ATCharacter::SyncTeamAppearance()
+{
+	ETeam Current = ETeam::None;
+	if (ATPlayerState* PS = GetPlayerState<ATPlayerState>())
+	{
+		Current = PS->Team;
+	}
+	ApplyTeamAppearance(Current);
+}
+
+void ATCharacter::ApplyTeamAppearance(ETeam NewTeam)
+{
+	// 1) 변경 없음이면 빠르게 종료
+	if (bHasAppliedTeam && LastAppliedTeam == NewTeam)
+	{
+		return;
+	}
+
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ApplyTeamAppearance: MeshComp is null."));
+		return;
+	}
+
+	// 2) 적용할 메쉬 선택
+	USkeletalMesh* Desired = nullptr;
+	switch (NewTeam)
+	{
+	case ETeam::Police: Desired = Mesh_Police; break;
+	case ETeam::Thief:  Desired = Mesh_Thief;  break;
+	case ETeam::None:
+	default:            Desired = Mesh_None;   break;
+	}
+
+	// 3) None 상태이거나 지정 메쉬가 비어있으면 기존 메쉬 유지 (로그는 1회만)
+	if (!Desired)
+	{
+		if (!bHasAppliedTeam) // 최초 적용 시에만 경고 (반복 경고 방지)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("ApplyTeamAppearance: Desired mesh is null for team %d. Keeping current mesh."), static_cast<int32>(NewTeam));
+		}
+		Desired = MeshComp->GetSkeletalMeshAsset();
+	}
+
+	// 4) 실제 변경 필요 여부 확인
+	if (Desired && MeshComp->GetSkeletalMeshAsset() != Desired)
+	{
+		MeshComp->SetSkeletalMesh(Desired, /*bReinitPose*/ true);
+		// 필요 시: 팀별 머티리얼/애님BP/속도 조정 등을 여기서 확장
+		// 예) if (UCharacterMovementComponent* Move = GetCharacterMovement()) { ... }
+		UE_LOG(LogTemp, Log, TEXT("ApplyTeamAppearance: Mesh changed to %s (Team %d)"),
+			*Desired->GetName(), static_cast<int32>(NewTeam));
+	}
+
+	// 5) 상태 갱신
+	LastAppliedTeam = NewTeam;
+	bHasAppliedTeam = true;
 }
 
 void ATCharacter::Tick(float DeltaTime)

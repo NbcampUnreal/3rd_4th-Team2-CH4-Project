@@ -4,20 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "OutGameUI/TTeamTypes.h"
 #include "TCharacter.generated.h"
 
 class UCameraComponent;
 class USpringArmComponent;
 class USkeletalMesh;
-
+class ATPlayerState;
 struct FInputActionValue;
-
-//UENUM(BlueprintType)
-//enum class ETeam : uint8
-//{
-//	TeamP UMETA(DisplayName = "TeamP"),
-//	TeamD UMETA(DisplayName = "TeamD")
-//};
 
 UCLASS()
 class TEAM02_API ATCharacter : public ACharacter
@@ -29,9 +23,10 @@ public:
 	ATCharacter();
 
 	virtual void Tick(float DeltaTime) override;
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual void OnRep_PlayerState() override;
+	virtual void PossessedBy(AController* NewController) override;
 
 public:
 
@@ -63,25 +58,24 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
 	float AttackRadius;
 
-
-	// Server
-
-	/*UPROPERTY(ReplicatedUsing = OnRep_Team, EditAnywhere, BlueprintReadOnly, Category = "Team")
-	ETeam Team = ETeam::TeamP;*/
-
-	/*UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Team")
-	TObjectPtr<USkeletalMesh> TeamPMesh;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Team")
-	TObjectPtr<USkeletalMesh> TeamDMesh;*/
-
-	//UFUNCTION()
-	//void OnRep_Team();
-	//UFUNCTION(Server, Reliable)
-	//void ServerSetTeam(ETeam NewTeam);
-	//void ApplyTeamAppearance();
 	UFUNCTION(Server, Reliable)
 	void ServerAttack();
 	void PerformAttack();
+
+	UPROPERTY(EditDefaultsOnly, Category = "Team|Mesh")
+	TObjectPtr<USkeletalMesh> Mesh_None;
+	UPROPERTY(EditDefaultsOnly, Category = "Team|Mesh")
+	TObjectPtr<USkeletalMesh> Mesh_Police;
+	UPROPERTY(EditDefaultsOnly, Category = "Team|Mesh")
+	TObjectPtr<USkeletalMesh> Mesh_Thief;
+
+	bool bHasAppliedTeam = false;
+	ETeam LastAppliedTeam = ETeam::None;
+	TWeakObjectPtr<ATPlayerState> BoundPlayerState;
+
+	void BindTeamDelegate(); // 팀 변경 델리게이트 바인딩
+	void SyncTeamAppearance(); // 플레이어 상태와 외형 동기화
+	void ApplyTeamAppearance(ETeam NewTeam); // 팀 외형 적용
 
 protected:
 	void Move(const FInputActionValue& Value);
@@ -93,3 +87,4 @@ protected:
 
 
 };
+
