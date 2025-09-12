@@ -12,12 +12,17 @@ ATBind::ATBind()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
-	InitialLifeSpan = 4.0f; // Failsafe
 
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
 	SetRootComponent(SphereComponent);
-	SphereComponent->SetSphereRadius(1000.0f); // Default 10m radius, editable in Blueprint
-	SphereComponent->SetCollisionProfileName(FName("OverlapAllDynamic"));
+	SphereComponent->SetSphereRadius(1000.0f);
+
+	// Explicitly set collision to overlap with Pawns
+	SphereComponent->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+	SphereComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	SphereComponent->SetGenerateOverlapEvents(true);
+	SphereComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	SphereComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
 	MeshComponent->SetupAttachment(GetRootComponent());
@@ -29,49 +34,90 @@ void ATBind::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// Bind overlap events and set self-destruction timer only on the server
 	if (HasAuthority())
 	{
-		TArray<AActor*> OverlappedActors;
-		SphereComponent->GetOverlappingActors(OverlappedActors, ACharacter::StaticClass());
+		// Set timer to destroy actor after BindDuration
+		GetWorld()->GetTimerManager().SetTimer(BindTimerHandle, this, &ATBind::OnDisappear, BindDuration, false);
 
-		for (AActor* OverlappedActor : OverlappedActors)
+		SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &ATBind::OnSphereOverlap);
+
+		// Check for already overlapping actors on BeginPlay
+		TArray<AActor*> OverlappingActors;
+		SphereComponent->GetOverlappingActors(OverlappingActors, ACharacter::StaticClass());
+
+		for (AActor* OverlappingActor : OverlappingActors)
 		{
-			ACharacter* Character = Cast<ACharacter>(OverlappedActor);
+			ACharacter* Character = Cast<ACharacter>(OverlappingActor);
 			if (Character && Character->ActorHasTag(FName("Tagger")))
 			{
-				UCharacterMovementComponent* MoveComp = Character->GetCharacterMovement();
-				if (MoveComp)
-				{
-					MoveComp->DisableMovement();
-					AffectedCharacters.Add(Character);
-				}
+				ApplyBindEffect(Character);
 			}
-		}
-
-		if (AffectedCharacters.Num() > 0)
-		{
-			GetWorld()->GetTimerManager().SetTimer(BindTimerHandle, this, &ATBind::RemoveBind, BindDuration, false);
-		}
-		else
-		{
-			Destroy();
 		}
 	}
 }
 
-void ATBind::RemoveBind()
+void ATBind::OnDisappear()
 {
-	for (TWeakObjectPtr<ACharacter> CharacterPtr : AffectedCharacters)
+	if (HasAuthority())
 	{
-		if (CharacterPtr.IsValid())
+		// Unbind all currently affected characters
+		TArray<TWeakObjectPtr<ACharacter>> BoundCharsArray = ActiveBoundCharacters.Array();
+		for (TWeakObjectPtr<ACharacter> WeakChar : BoundCharsArray)
 		{
-			UCharacterMovementComponent* MoveComp = CharacterPtr->GetCharacterMovement();
-			if (MoveComp)
+			if (ACharacter* BoundChar = WeakChar.Get())
 			{
-				MoveComp->SetMovementMode(EMovementMode::MOVE_Walking);
+				RemoveBindEffect(BoundChar);
 			}
 		}
+		Destroy();
 	}
+}
 
-	Destroy();
+void ATBind::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	// --- DEBUG LOGGING ---
+	if (GEngine && OtherActor)
+	{
+		FString TagsString = "Tags: ";
+		for (const FName& Tag : OtherActor->Tags)
+		{
+			TagsString += Tag.ToString() + TEXT(" ");
+		}
+		FString DebugMessage = FString::Printf(TEXT("TBind Overlapped Actor: %s | %s"), *OtherActor->GetName(), *TagsString);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, DebugMessage);
+	}
+	// --- END DEBUG LOGGING ---
+
+	ACharacter* Character = Cast<ACharacter>(OtherActor);
+	if (Character && Character->ActorHasTag(FName("Tagger")))
+	{
+		ApplyBindEffect(Character);
+	}
+}
+
+void ATBind::ApplyBindEffect(ACharacter* Character)
+{
+	if (Character && !ActiveBoundCharacters.Contains(Character))
+	{
+		UCharacterMovementComponent* MoveComp = Character->GetCharacterMovement();
+		if (MoveComp)
+		{
+			MoveComp->DisableMovement();
+			ActiveBoundCharacters.Add(Character);
+		}
+	}
+}
+
+void ATBind::RemoveBindEffect(ACharacter* Character)
+{
+	if (Character && ActiveBoundCharacters.Contains(Character))
+	{
+		UCharacterMovementComponent* MoveComp = Character->GetCharacterMovement();
+		if (MoveComp)
+		{
+			MoveComp->SetMovementMode(EMovementMode::MOVE_Walking);
+			ActiveBoundCharacters.Remove(Character);
+		}
+	}
 }

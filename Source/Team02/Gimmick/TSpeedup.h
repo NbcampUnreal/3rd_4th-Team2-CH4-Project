@@ -8,19 +8,23 @@
 
 class ACharacter;
 class USphereComponent;
+//class AHCharacter; // Forward declaration for HCharacter
 
 UCLASS()
 class TEAM02_API ATSpeedup : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	ATSpeedup();
 
 protected:
 	virtual void BeginPlay() override;
 
 	void RemoveSpeedBuff();
+
+	UFUNCTION()
+	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -34,6 +38,6 @@ private:
 
 	FTimerHandle SpeedBuffTimerHandle;
 
-	UPROPERTY()
-	TMap<TWeakObjectPtr<ACharacter>, float> AffectedCharacters;
+	//UPROPERTY()
+	//TWeakObjectPtr<AHCharacter> AffectedHider;
 };
