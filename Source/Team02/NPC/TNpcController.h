@@ -34,10 +34,10 @@ public:
 	static const FName WaitTimeKey;
 
 private:
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Meta=(AllowPrivateAccess))
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,meta=(AllowPrivateAccess))
 	TObjectPtr<UBlackboardData> BlackboardDataAsset;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Meta=(AllowPrivateAccess))
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,meta=(AllowPrivateAccess))
 	TObjectPtr<UBehaviorTree> BehaviorTree;
 	
 };
