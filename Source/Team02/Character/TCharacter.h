@@ -4,13 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Gimmick/TSpeedup.h"
 #include "OutGameUI/TTeamTypes.h"
 #include "TCharacter.generated.h"
 
 class UCameraComponent;
 class USpringArmComponent;
 class USkeletalMesh;
-class ATPlayerState;
+class ATBind;
+class APlayerState;
+
 struct FInputActionValue;
 
 UCLASS()
@@ -19,24 +22,35 @@ class TEAM02_API ATCharacter : public ACharacter
 	GENERATED_BODY()
 
 public:
-
 	ATCharacter();
 
 	virtual void Tick(float DeltaTime) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void OnRep_PlayerState() override;
-	virtual void PossessedBy(AController* NewController) override;
+
+	void ApplySpeedBuff(float Multiplier, float Duration);
 
 public:
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 	TObjectPtr<UCameraComponent> Camera;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 	TObjectPtr<USpringArmComponent> SpringArm;
 
-protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Skill")
+	TSubclassOf<ATBind> BindSkillActorClass;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Skill")
+	TSubclassOf<ATSpeedup> SpeedupSkillActorClass;
+
+	UPROPERTY(Replicated)
+	bool bCanUseBindSkill;
+
+	UPROPERTY(Replicated)
+	bool bCanUseSpeedupSkill;
+
+protected:
 	// Stamina, Sprint
 	float WalkSpeed;
 	float SprintSpeed;
@@ -58,9 +72,38 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
 	float AttackRadius;
 
+	// Speed Buff
+	UPROPERTY(ReplicatedUsing = OnRep_SpeedBuffMultiplier)
+	float SpeedBuffMultiplier;
+	FTimerHandle SpeedBuffTimerHandle;
+
+	UFUNCTION()
+	void OnRep_SpeedBuffMultiplier();
+
+	// Server
 	UFUNCTION(Server, Reliable)
 	void ServerAttack();
 	void PerformAttack();
+
+	UFUNCTION(Server, Reliable)
+	void Server_UseSkill();
+
+	UFUNCTION(Server, Reliable)
+	void Server_UseSkill2();
+
+protected:
+	void Move(const FInputActionValue& Value);
+	void Look(const FInputActionValue& Value);
+	void SprintStart(const FInputActionValue& Value);
+	void SprintStop(const FInputActionValue& Value);
+	void AttackStart(const FInputActionValue& Value);
+	void AttackEnd(const FInputActionValue& Value);
+	void UseSkill(const FInputActionValue& Value);
+	void UseSkill2(const FInputActionValue& Value);
+
+	void UpdateTeamTags();
+	void EndSpeedBuff();
+	void UpdateMovementSpeed();
 
 	UPROPERTY(EditDefaultsOnly, Category = "Team|Mesh")
 	TObjectPtr<USkeletalMesh> Mesh_None;
@@ -71,20 +114,9 @@ protected:
 
 	bool bHasAppliedTeam = false;
 	ETeam LastAppliedTeam = ETeam::None;
-	TWeakObjectPtr<ATPlayerState> BoundPlayerState;
+	TWeakObjectPtr<APlayerState> BoundPlayerState;
 
 	void BindTeamDelegate(); // 팀 변경 델리게이트 바인딩
 	void SyncTeamAppearance(); // 플레이어 상태와 외형 동기화
 	void ApplyTeamAppearance(ETeam NewTeam); // 팀 외형 적용
-
-protected:
-	void Move(const FInputActionValue& Value);
-	void Look(const FInputActionValue& Value);
-	void SprintStart(const FInputActionValue& Value);
-	void SprintStop(const FInputActionValue& Value);
-	void AttackStart(const FInputActionValue& Value);
-	void AttackEnd(const FInputActionValue& Value);
-
-
 };
-

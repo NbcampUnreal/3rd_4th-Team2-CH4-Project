@@ -5,7 +5,7 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TimerManager.h"
-//#include "Character/HCharacter.h" // Include HCharacter.h
+#include "Character/TCharacter.h"
 
 // Sets default values
 ATSpeedup::ATSpeedup()
@@ -39,30 +39,13 @@ void ATSpeedup::BeginPlay()
 
 void ATSpeedup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	/*
-	AHCharacter* HiderCharacter = Cast<AHCharacter>(OtherActor);
-	if (HiderCharacter && HiderCharacter->ActorHasTag(FName("Hider")))
+	ATCharacter* TChar = Cast<ATCharacter>(OtherActor);
+	if (TChar && TChar->ActorHasTag(FName("Hider")))
 	{
-		// Apply speed buff through HCharacter's function
-		HiderCharacter->ApplySpeedBuff();
-		AffectedHider = HiderCharacter; // Store the affected character
+		// Apply speed buff through TCharacter's function
+		TChar->ApplySpeedBuff(SpeedMultiplier, BuffDuration);
 
-		// Set a timer to remove the speed buff
-		GetWorld()->GetTimerManager().SetTimer(SpeedBuffTimerHandle, this, &ATSpeedup::RemoveSpeedBuff, BuffDuration, false);
-
-		// Disable further overlaps to prevent re-triggering
-		SphereComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		// Gimmick is consumed, destroy it.
+		Destroy();
 	}
-	*/
-}
-
-void ATSpeedup::RemoveSpeedBuff()
-{
-	/*
-	if (AffectedHider.IsValid())
-	{
-		AffectedHider->RemoveSpeedBuff();
-	}
-	*/
-	Destroy();
 }

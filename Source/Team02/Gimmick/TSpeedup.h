@@ -8,7 +8,7 @@
 
 class ACharacter;
 class USphereComponent;
-//class AHCharacter; // Forward declaration for HCharacter
+
 
 UCLASS()
 class TEAM02_API ATSpeedup : public AActor
@@ -20,8 +20,6 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-
-	void RemoveSpeedBuff();
 
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -35,9 +33,4 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Gimmick")
 	float BuffDuration = 3.0f;
-
-	FTimerHandle SpeedBuffTimerHandle;
-
-	//UPROPERTY()
-	//TWeakObjectPtr<AHCharacter> AffectedHider;
 };
