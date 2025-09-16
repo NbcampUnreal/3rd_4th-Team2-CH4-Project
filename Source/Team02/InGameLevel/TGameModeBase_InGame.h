@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -7,7 +7,12 @@
 #include "TGameModeBase_InGame.generated.h"
 
 class ATPlayerState_InGame;
-
+/**
+ * 인게임 규칙 집행:
+ * - 2명 접속 시 라운드 시작
+ * - 즉사/킬 보고 → 킬 로그 브로드캐스트 + 라운드 승리 처리
+ * - 5판 3선승 충족 시 결과 처리
+ */
 UCLASS()
 class TEAM02_API ATGameModeBase_InGame : public AGameModeBase
 {
@@ -35,4 +40,18 @@ public:
 
 	// 팀별 Pawn 스폰
 	virtual APawn* SpawnDefaultPawnFor_Implementation(AController* NewPlayer, AActor* StartSpot) override;
+
+public:
+
+	UPROPERTY(EditDefaultsOnly, Category = "Rule")
+	int32 RoundSeconds = 180; // 3분 (3~5분 권장)
+
+	virtual void PostLogin(APlayerController* NewPlayer) override;
+
+	/** 캐릭터가 킬/사망을 보고할 때 호출(서버) */
+	UFUNCTION(BlueprintCallable) void HandleEliminated(AController* Killer, AController* Victim);
+
+	void TryStartRoundIfReady();
+	void EndRound(APlayerState* LastVictimPS);
+	void EndMatchAndShowResult();
 };
