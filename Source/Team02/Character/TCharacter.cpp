@@ -6,7 +6,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "Character/TPlayerController.h"
+#include "OutGameUI/TUPlayerController.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/SkeletalMesh.h"
@@ -65,40 +65,33 @@ void ATCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	// Set up action bindings
-
-	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+	if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		if (ATPlayerController* TPC = Cast<ATPlayerController>(GetController()))
-		{
-			if (TPC->MoveAction)
-			{
-				EnhancedInputComponent->BindAction(TPC->MoveAction, ETriggerEvent::Triggered, this, &ATCharacter::Move);
-			}
-			if (TPC->LookAction)
-			{
-				EnhancedInputComponent->BindAction(TPC->LookAction, ETriggerEvent::Triggered, this, &ATCharacter::Look);
-			}
-			if (TPC->SprintAction)
-			{
-				EnhancedInputComponent->BindAction(TPC->SprintAction, ETriggerEvent::Started, this, &ATCharacter::SprintStart);
-				EnhancedInputComponent->BindAction(TPC->SprintAction, ETriggerEvent::Completed, this, &ATCharacter::SprintStop);
-			}
-			if (TPC->AttackAction)
-			{
-				EnhancedInputComponent->BindAction(TPC->AttackAction, ETriggerEvent::Started, this, &ATCharacter::AttackStart);
-				EnhancedInputComponent->BindAction(TPC->AttackAction, ETriggerEvent::Completed, this, &ATCharacter::AttackEnd);
-			}
-			if (TPC->Skill1Action)
-			{
-				EnhancedInputComponent->BindAction(TPC->Skill1Action, ETriggerEvent::Started, this, &ATCharacter::UseSkill);
-			}
-			if (TPC->Skill2Action)
-			{
-				EnhancedInputComponent->BindAction(TPC->Skill2Action, ETriggerEvent::Started, this, &ATCharacter::UseSkill2);
-			}
-		}
+		UE_LOG(LogTemp, Warning, TEXT("[Char] SetupPlayerInputComponent"));
 
+		// (당신 프로젝트 구조에 맞게) 컨트롤러에서 액션 가져오는 경우:
+		if (ATUPlayerController* PC = Cast<ATUPlayerController>(GetController()))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[Char] Actions  Move:%s  Look:%s  Sprint:%s  Attack:%s"),
+				PC->MoveAction ? *PC->MoveAction->GetName() : TEXT("NULL"),
+				PC->LookAction ? *PC->LookAction->GetName() : TEXT("NULL"),
+				PC->SprintAction ? *PC->SprintAction->GetName() : TEXT("NULL"),
+				PC->AttackAction ? *PC->AttackAction->GetName() : TEXT("NULL"));
+
+			// 여기서 실제 바인딩 (이미 있다면 로그만 유지)
+			if (PC->MoveAction)   EIC->BindAction(PC->MoveAction,   ETriggerEvent::Triggered, this, &ATCharacter::Move);
+			if (PC->LookAction)   EIC->BindAction(PC->LookAction,   ETriggerEvent::Triggered, this, &ATCharacter::Look);
+			EIC->BindAction(PC->SprintAction, ETriggerEvent::Started,   this, &ATCharacter::SprintStart);
+			EIC->BindAction(PC->SprintAction, ETriggerEvent::Completed, this, &ATCharacter::SprintStop);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("[Char] Controller is not TUPlayerController"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[Char] EnhancedInputComponent not found"));
 	}
 }
 

@@ -32,12 +32,10 @@ AActor* ATGameModeBase_InGame::ChoosePlayerStart_Implementation(AController* Pla
     {
         APlayerStart* PS = *It;
         if (!Fallback) Fallback = PS;
-
-        // 1) PlayerStart의 전용 태그 필드 우선
+        
         if (Wanted != NAME_None && PS->PlayerStartTag == Wanted)
             return PS;
-
-        // 2) (호환) Actor Tags에도 넣어뒀다면 이것도 허용
+        
         if (Wanted != NAME_None && PS->Tags.Contains(Wanted))
             return PS;
     }
