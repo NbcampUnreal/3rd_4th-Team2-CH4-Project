@@ -1,6 +1,7 @@
 // TPlayerState.cpp
 
 #include "TPlayerState.h"
+#include "InGameLevel/TPlayerState_InGame.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/PlayerController.h"
 #include "TUPlayerController.h"
@@ -85,4 +86,14 @@ void ATPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(ATPlayerState, Team);
 	DOREPLIFETIME(ATPlayerState, bReady);
+}
+
+void ATPlayerState::CopyProperties(APlayerState* NewPlayerState)
+{
+	Super::CopyProperties(NewPlayerState);
+
+	if (ATPlayerState_InGame* InGamePS = Cast<ATPlayerState_InGame>(NewPlayerState))
+	{
+		InGamePS->Team = this->Team;
+	}
 }

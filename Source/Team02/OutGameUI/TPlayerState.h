@@ -27,7 +27,7 @@ public:
 	void SetReady(bool bInReady);
 
 	FOnLobbyStatusChanged OnLobbyStatusChanged;
-
+	virtual void CopyProperties(APlayerState* NewPlayerState) override;
 
 protected:
 

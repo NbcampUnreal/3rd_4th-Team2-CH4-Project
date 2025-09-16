@@ -6,7 +6,7 @@
 #include "TUPlayerController.h"
 #include "TPlayerState.h"
 #include "TGameStateBase_Lobby.h"
-
+#include "InGameLevel/TPlayerState_InGame.h"
 #include "Engine/World.h"
 #include "GameFramework/GameStateBase.h"
 #include "Kismet/GameplayStatics.h"
@@ -14,7 +14,7 @@
 ATGameModeBase_Lobby::ATGameModeBase_Lobby()
 {
     PlayerControllerClass = ATUPlayerController::StaticClass();
-    PlayerStateClass      = ATPlayerState::StaticClass();
+    PlayerStateClass      = ATPlayerState::StaticClass(); 
     GameStateClass        = ATGameStateBase_Lobby::StaticClass();
     
     DefaultPawnClass      = nullptr;
