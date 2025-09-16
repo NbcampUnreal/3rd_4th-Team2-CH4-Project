@@ -83,6 +83,11 @@ void ATCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 			if (PC->LookAction)   EIC->BindAction(PC->LookAction,   ETriggerEvent::Triggered, this, &ATCharacter::Look);
 			EIC->BindAction(PC->SprintAction, ETriggerEvent::Started,   this, &ATCharacter::SprintStart);
 			EIC->BindAction(PC->SprintAction, ETriggerEvent::Completed, this, &ATCharacter::SprintStop);
+			if (PC->AttackAction)
+			{
+				EIC->BindAction(PC->AttackAction, ETriggerEvent::Started, this, &ATCharacter::AttackStart);
+				EIC->BindAction(PC->AttackAction, ETriggerEvent::Completed, this, &ATCharacter::AttackEnd);
+			}
 		}
 		else
 		{
@@ -200,6 +205,7 @@ void ATCharacter::SprintStop(const FInputActionValue& Value)
 
 void ATCharacter::AttackStart(const FInputActionValue& Value)
 {
+
 	if (bIsAttacking)
 	{
 		return;
@@ -216,22 +222,20 @@ void ATCharacter::AttackStart(const FInputActionValue& Value)
 
 void ATCharacter::ServerAttack_Implementation()
 {
-
-
+	// 팀 Police만 공격 가능
+	// 테스트용으로 잠시 막음
+	/*ATPlayerState* PS = GetPlayerState<ATPlayerState>();
+	if (!PS || PS->Team != ETeam::Police)
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("[Char] Attack denied (server): Only Police can attack"));
+		return;
+	}*/
 	PerformAttack();
 
 }
 
 void ATCharacter::PerformAttack()
 {
-	//if (Team != ETeam::TeamP)
-	//{
-	//	UE_LOG(LogTemp, Verbose, TEXT("Attack denied (server): Not TeamP"));
-
-	//	return; // 공격은 TeamP만
-	//}
-
-
 	const FVector Forward = GetActorForwardVector();
 	const FVector Start = GetActorLocation() + Forward * 100.f;
 	const FVector End = Start + Forward * AttackRange;

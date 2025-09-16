@@ -116,7 +116,4 @@ protected:
 	ETeam LastAppliedTeam = ETeam::None;
 	TWeakObjectPtr<APlayerState> BoundPlayerState;
 
-	void BindTeamDelegate(); // 팀 변경 델리게이트 바인딩
-	void SyncTeamAppearance(); // 플레이어 상태와 외형 동기화
-	void ApplyTeamAppearance(ETeam NewTeam); // 팀 외형 적용
 };
