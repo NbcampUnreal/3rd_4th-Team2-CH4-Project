@@ -56,6 +56,7 @@ void ATCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(ATCharacter, bCanUseBindSkill);
 	DOREPLIFETIME(ATCharacter, bCanUseSpeedupSkill);
+	DOREPLIFETIME(ATCharacter, bCanUseBellSkill);
 	DOREPLIFETIME(ATCharacter, SpeedBuffMultiplier);
 }
 
@@ -79,14 +80,26 @@ void ATCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 				PC->AttackAction ? *PC->AttackAction->GetName() : TEXT("NULL"));
 
 			// 여기서 실제 바인딩 (이미 있다면 로그만 유지)
-			if (PC->MoveAction)   EIC->BindAction(PC->MoveAction,   ETriggerEvent::Triggered, this, &ATCharacter::Move);
-			if (PC->LookAction)   EIC->BindAction(PC->LookAction,   ETriggerEvent::Triggered, this, &ATCharacter::Look);
-			EIC->BindAction(PC->SprintAction, ETriggerEvent::Started,   this, &ATCharacter::SprintStart);
+			if (PC->MoveAction)   EIC->BindAction(PC->MoveAction, ETriggerEvent::Triggered, this, &ATCharacter::Move);
+			if (PC->LookAction)   EIC->BindAction(PC->LookAction, ETriggerEvent::Triggered, this, &ATCharacter::Look);
+			EIC->BindAction(PC->SprintAction, ETriggerEvent::Started, this, &ATCharacter::SprintStart);
 			EIC->BindAction(PC->SprintAction, ETriggerEvent::Completed, this, &ATCharacter::SprintStop);
 			if (PC->AttackAction)
 			{
 				EIC->BindAction(PC->AttackAction, ETriggerEvent::Started, this, &ATCharacter::AttackStart);
 				EIC->BindAction(PC->AttackAction, ETriggerEvent::Completed, this, &ATCharacter::AttackEnd);
+			}
+			if (PC->Skill1Action)
+			{
+				EIC->BindAction(PC->Skill1Action, ETriggerEvent::Started, this, &ATCharacter::UseSkill);
+			}
+			if (PC->Skill2Action)
+			{
+				EIC->BindAction(PC->Skill2Action, ETriggerEvent::Started, this, &ATCharacter::UseSkill2);
+			}
+			if (PC->Skill3Action)
+			{
+				EIC->BindAction(PC->Skill3Action, ETriggerEvent::Started, this, &ATCharacter::UseSkill3);
 			}
 		}
 		else
@@ -105,6 +118,7 @@ void ATCharacter::BeginPlay()
 	Super::BeginPlay();
 	bCanUseBindSkill = true;
 	bCanUseSpeedupSkill = true;
+	bCanUseBellSkill = true;
 	UpdateTeamTags();
 }
 
@@ -173,26 +187,20 @@ bool ATCharacter::CanSprint() const
 
 void ATCharacter::SprintStart(const FInputActionValue& Value)
 {
-
-
-	GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
-
 	if (!bIsSprinting && CanSprint())
 	{
 		bIsSprinting = true;
-		if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+		UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+		if (MoveComp)
 		{
 			MoveComp->MaxWalkSpeed = SprintSpeed;
 		}
+		//UpdateMovementSpeed();스피드업이 적용이 안되서 일단 주석처리함
 	}
-
-
 }
 
 void ATCharacter::SprintStop(const FInputActionValue& Value)
 {
-	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
-
 	if (bIsSprinting)
 	{
 		bIsSprinting = false;
@@ -201,6 +209,7 @@ void ATCharacter::SprintStop(const FInputActionValue& Value)
 	{
 		MoveComp->MaxWalkSpeed = WalkSpeed;
 	}
+	//UpdateMovementSpeed();스피드업이 적용이 안되서 일단 주석처리함
 }
 
 void ATCharacter::AttackStart(const FInputActionValue& Value)
@@ -285,54 +294,126 @@ void ATCharacter::UseSkill2(const FInputActionValue& Value)
 	Server_UseSkill2();
 }
 
+void ATCharacter::UseSkill3(const FInputActionValue& Value)
+{
+	Server_UseSkill3();
+}
+
 void ATCharacter::Server_UseSkill_Implementation()
 {
-	if (!bCanUseBindSkill) return;
+	if (!bCanUseBindSkill)
+	{
+		return;
+	}
 
 	ATPlayerState* PS = GetPlayerState<ATPlayerState>();
-	if (PS && PS->Team == ETeam::Thief)
+	if (!PS)
 	{
-		if (BindSkillActorClass)
-		{
-			UWorld* World = GetWorld();
-			if (World)
-			{
-				bCanUseBindSkill = false;
-				const FVector SpawnLocation = GetActorLocation();
-				const FRotator SpawnRotation = GetActorRotation();
-				FActorSpawnParameters SpawnParams;
-				SpawnParams.Owner = this;
-				SpawnParams.Instigator = GetInstigator();
-
-				World->SpawnActor<ATBind>(BindSkillActorClass, SpawnLocation, SpawnRotation, SpawnParams);
-			}
-		}
+		return;
 	}
+
+	if (PS->Team != ETeam::Thief)
+	{
+		return;
+	}
+
+	if (!BindSkillActorClass)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	bCanUseBindSkill = false;
+	const FVector SpawnLocation = GetActorLocation();
+	const FRotator SpawnRotation = GetActorRotation();
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = GetInstigator();
+
+	World->SpawnActor<ATBind>(BindSkillActorClass, SpawnLocation, SpawnRotation, SpawnParams);
 }
 
 void ATCharacter::Server_UseSkill2_Implementation()
 {
-	if (!bCanUseSpeedupSkill) return;
+	if (!bCanUseSpeedupSkill)
+	{
+		return;
+	}
 
 	ATPlayerState* PS = GetPlayerState<ATPlayerState>();
-	if (PS && PS->Team == ETeam::Thief)
+	if (!PS)
 	{
-		if (SpeedupSkillActorClass)
-		{
-			UWorld* World = GetWorld();
-			if (World)
-			{
-				bCanUseSpeedupSkill = false;
-				const FVector SpawnLocation = GetActorLocation();
-				const FRotator SpawnRotation = GetActorRotation();
-				FActorSpawnParameters SpawnParams;
-				SpawnParams.Owner = this;
-				SpawnParams.Instigator = GetInstigator();
-
-				World->SpawnActor<ATSpeedup>(SpeedupSkillActorClass, SpawnLocation, SpawnRotation, SpawnParams);
-			}
-		}
+		return;
 	}
+
+	if (PS->Team != ETeam::Thief)
+	{
+		return;
+	}
+
+	if (!SpeedupSkillActorClass)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	bCanUseSpeedupSkill = false;
+	const FVector SpawnLocation = GetActorLocation();
+	const FRotator SpawnRotation = GetActorRotation();
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = GetInstigator();
+
+	World->SpawnActor<ATSpeedup>(SpeedupSkillActorClass, SpawnLocation, SpawnRotation, SpawnParams);
+}
+
+void ATCharacter::Server_UseSkill3_Implementation()
+{
+	if (!bCanUseBellSkill)
+	{
+		return;
+	}
+
+	ATPlayerState* PS = GetPlayerState<ATPlayerState>(); // IMPORTANT: This still needs to be ATPlayerState_InGame
+	if (!PS)
+	{
+		return;
+	}
+
+	if (PS->Team != ETeam::Police) // Check for Police team
+	{
+		return;
+	}
+
+	if (!BellSkillActorClass)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	bCanUseBellSkill = false;
+	const FVector SpawnLocation = GetActorLocation();
+	const FRotator SpawnRotation = GetActorRotation();
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = GetInstigator();
+
+	World->SpawnActor<ATBell>(BellSkillActorClass, SpawnLocation, SpawnRotation, SpawnParams);
 }
 
 void ATCharacter::ApplySpeedBuff(float Multiplier, float Duration)
@@ -363,7 +444,8 @@ void ATCharacter::UpdateMovementSpeed()
 {
 	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 	{
-		MoveComp->MaxWalkSpeed = WalkSpeed * SpeedBuffMultiplier;
+		float CurrentBaseSpeed = bIsSprinting ? SprintSpeed : WalkSpeed;
+		MoveComp->MaxWalkSpeed = CurrentBaseSpeed * SpeedBuffMultiplier;
 	}
 }
 
@@ -385,4 +467,3 @@ void ATCharacter::UpdateTeamTags()
 		Tags.Add(FName("Hider"));
 	}
 }
-

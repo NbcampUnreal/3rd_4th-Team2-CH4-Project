@@ -16,86 +16,94 @@ class ULobbyWidget;
 UCLASS()
 class TEAM02_API ATUPlayerController : public APlayerController
 {
-GENERATED_BODY()
+	GENERATED_BODY()
 
 
 public:
-ATUPlayerController();
+	ATUPlayerController();
 
 
-// ===== 생명주기 =====
-virtual void BeginPlay() override; // 맵 진입 시 UI/모드 설정 (Title/Lobby 구분)
-virtual void OnPossess(APawn* InPawn) override; // 인게임 진입 시 GameOnly + 매핑 적용
-virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-virtual void SetupInputComponent() override; // 스킬 입력 바인딩
+	// ===== 생명주기 =====
+	virtual void BeginPlay() override; // 맵 진입 시 UI/모드 설정 (Title/Lobby 구분)
+	virtual void OnPossess(APawn* InPawn) override; // 인게임 진입 시 GameOnly + 매핑 적용
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void SetupInputComponent() override; // 스킬 입력 바인딩
 
 
-// ===== UI 에셋 =====
-UPROPERTY(EditDefaultsOnly, Category="UI|Title")
-TSubclassOf<UUserWidget> TitleWidgetClass; // 타이틀 위젯(선택)
+	// ===== UI 에셋 =====
+	UPROPERTY(EditDefaultsOnly, Category = "UI|Title")
+	TSubclassOf<UUserWidget> TitleWidgetClass; // 타이틀 위젯(선택)
 
 
-UPROPERTY(EditDefaultsOnly, Category="UI|Lobby")
-TSubclassOf<ULobbyWidget> LobbyWidgetClass; // 로비 위젯
+	UPROPERTY(EditDefaultsOnly, Category = "UI|Lobby")
+	TSubclassOf<ULobbyWidget> LobbyWidgetClass; // 로비 위젯
 
 
-// ===== 인풋 매핑/액션 =====
-UPROPERTY(EditDefaultsOnly, Category="Input")
-TObjectPtr<UInputMappingContext> DefaultMappingContext = nullptr;
+	// ===== 인풋 매핑/액션 =====
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputMappingContext> DefaultMappingContext = nullptr;
 
 
-UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-TObjectPtr<UInputAction> MoveAction = nullptr;
-UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-TObjectPtr<UInputAction> LookAction = nullptr;
-UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-TObjectPtr<UInputAction> SprintAction = nullptr;
-UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-TObjectPtr<UInputAction> AttackAction = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	TObjectPtr<UInputAction> MoveAction = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	TObjectPtr<UInputAction> LookAction = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	TObjectPtr<UInputAction> SprintAction = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	TObjectPtr<UInputAction> AttackAction = nullptr;
 
 
-UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-TObjectPtr<UInputAction> Skill1Action = nullptr; // ✅ 복구
-UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-TObjectPtr<UInputAction> Skill2Action = nullptr; // ✅ 복구
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	TObjectPtr<UInputAction> Skill1Action = nullptr; // ✅ 복구
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	TObjectPtr<UInputAction> Skill2Action; // ✅ 복구
 
 
-// ===== 타이틀: BP 버튼에서 호출 =====
-UFUNCTION(BlueprintCallable, Category="Title")
-void RequestEnterLobby(); // 타이틀 → 로비 (서버/클라 자동 분기)
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	TObjectPtr<UInputAction> Skill3Action;
 
 
-UFUNCTION(BlueprintCallable, Category="Title")
-void JoinServer(const FString& InIPAddress); // IP 입력 접속 (선택)
 
 
-UFUNCTION(Server, Reliable)
-void Server_RequestEnterLobby();
+
+	// ===== 타이틀: BP 버튼에서 호출 =====
+	UFUNCTION(BlueprintCallable, Category = "Title")
+	void RequestEnterLobby(); // 타이틀 → 로비 (서버/클라 자동 분기)
 
 
-// ===== 로비: BP 버튼에서 호출 =====
-UFUNCTION(BlueprintCallable, Category="Lobby")
-void ToggleReady(); // 레디 토글 → 서버로 전달
+	UFUNCTION(BlueprintCallable, Category = "Title")
+	void JoinServer(const FString& InIPAddress); // IP 입력 접속 (선택)
 
 
-UFUNCTION(BlueprintCallable, Category="Lobby")
-void CycleTeam(); // 팀 순환(클라에서 호출) → 서버 RPC 무인자 버전 사용
+	UFUNCTION(Server, Reliable)
+	void Server_RequestEnterLobby();
 
 
-UFUNCTION(Server, Reliable)
-void Server_CycleTeam(); // ✅ 무인자: 서버에서 NextTeam 계산
+	// ===== 로비: BP 버튼에서 호출 =====
+	UFUNCTION(BlueprintCallable, Category = "Lobby")
+	void ToggleReady(); // 레디 토글 → 서버로 전달
 
 
-UFUNCTION(Server, Reliable)
-void Server_SetReady(bool bReadyDesired);
+	UFUNCTION(BlueprintCallable, Category = "Lobby")
+	void CycleTeam(); // 팀 순환(클라에서 호출) → 서버 RPC 무인자 버전 사용
 
 
-UFUNCTION(BlueprintCallable, Category="Lobby")
-void RefreshLobbyFromPS(); // PS값 → UI 갱신 브릿지
+	UFUNCTION(Server, Reliable)
+	void Server_CycleTeam(); // ✅ 무인자: 서버에서 NextTeam 계산
 
 
-UFUNCTION(BlueprintImplementableEvent, Category="Lobby")
-void BP_UpdateLobbyUI(ETeam Team, bool bReady); // BP에서 텍스트/아이콘 갱신(선택)
+	UFUNCTION(Server, Reliable)
+	void Server_SetReady(bool bReadyDesired);
+
+
+	UFUNCTION(BlueprintCallable, Category = "Lobby")
+	void RefreshLobbyFromPS(); // PS값 → UI 갱신 브릿지
+
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Lobby")
+	void BP_UpdateLobbyUI(ETeam Team, bool bReady); // BP에서 텍스트/아이콘 갱신(선택)
 
 
 private:
@@ -103,7 +111,7 @@ private:
 	UPROPERTY() TObjectPtr<ULobbyWidget> LobbyWidgetInstance = nullptr;
 
 	// ===== 맵 경로 (BP에서 변경 가능) =====
-	UPROPERTY(EditDefaultsOnly, Category="Maps")
+	UPROPERTY(EditDefaultsOnly, Category = "Maps")
 	FString LobbyMapPath = TEXT("/Game/Team02/OutGameUI/Map/LobbyMap");
 
 	// ===== 유틸 메서드 선언 =====

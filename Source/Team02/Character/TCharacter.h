@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Gimmick/TSpeedup.h"
 #include "OutGameUI/TTeamTypes.h"
+#include "Gimmick/TBell.h" // Added for Police Bell Gimmick
 #include "TCharacter.generated.h"
 
 class UCameraComponent;
@@ -50,6 +51,12 @@ public:
 	UPROPERTY(Replicated)
 	bool bCanUseSpeedupSkill;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Skill")
+	TSubclassOf<class ATBell> BellSkillActorClass;
+
+	UPROPERTY(Replicated)
+	bool bCanUseBellSkill;
+
 protected:
 	// Stamina, Sprint
 	float WalkSpeed;
@@ -91,6 +98,9 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_UseSkill2();
 
+	UFUNCTION(Server, Reliable)
+	void Server_UseSkill3();
+
 protected:
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
@@ -100,6 +110,8 @@ protected:
 	void AttackEnd(const FInputActionValue& Value);
 	void UseSkill(const FInputActionValue& Value);
 	void UseSkill2(const FInputActionValue& Value);
+
+	void UseSkill3(const FInputActionValue& Value);
 
 	void UpdateTeamTags();
 	void EndSpeedBuff();
