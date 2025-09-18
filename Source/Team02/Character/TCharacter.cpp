@@ -189,6 +189,7 @@ void ATCharacter::SprintStart(const FInputActionValue& Value)
 {
 	if (!bIsSprinting && CanSprint())
 	{
+		RunningMontagePlay();
 		bIsSprinting = true;
 		UCharacterMovementComponent* MoveComp = GetCharacterMovement();
 		if (MoveComp)
@@ -214,7 +215,7 @@ void ATCharacter::SprintStop(const FInputActionValue& Value)
 
 void ATCharacter::AttackStart(const FInputActionValue& Value)
 {
-
+	
 	if (bIsAttacking)
 	{
 		return;
@@ -224,6 +225,7 @@ void ATCharacter::AttackStart(const FInputActionValue& Value)
 		SprintStop(FInputActionValue(false));
 	}
 	bIsAttacking = true;
+	AttackMontagePlay();
 
 	ServerAttack();
 
@@ -466,4 +468,16 @@ void ATCharacter::UpdateTeamTags()
 	{
 		Tags.Add(FName("Hider"));
 	}
+}
+
+void ATCharacter::AttackMontagePlay()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	AnimInstance->Montage_Play(MeleeAttackMontage);
+}
+
+void ATCharacter::RunningMontagePlay()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	AnimInstance->Montage_Play(RunningMontage);
 }

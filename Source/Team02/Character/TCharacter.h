@@ -57,7 +57,6 @@ public:
 	UPROPERTY(Replicated)
 	bool bCanUseBellSkill;
 
-protected:
 	// Stamina, Sprint
 	float WalkSpeed;
 	float SprintSpeed;
@@ -101,7 +100,6 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_UseSkill3();
 
-protected:
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void SprintStart(const FInputActionValue& Value);
@@ -124,8 +122,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Team|Mesh")
 	TObjectPtr<USkeletalMesh> Mesh_Thief;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	TObjectPtr <class UAnimMontage> MeleeAttackMontage;
+	void AttackMontagePlay();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	TObjectPtr <class UAnimMontage> RunningMontage;
+	void RunningMontagePlay();
+
 	bool bHasAppliedTeam = false;
 	ETeam LastAppliedTeam = ETeam::None;
 	TWeakObjectPtr<APlayerState> BoundPlayerState;
 
-};
+}; 
