@@ -34,18 +34,15 @@ protected:
 	float DetectionRadius = 1000.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
-	float MaxSoundDuration = 5.0f;
+	float MaxSoundDuration = 1.5f;
 
-	UPROPERTY(Replicated)
-	float CurrentSoundPlayedTime;
 
-	UPROPERTY(Replicated)
-	bool bIsSoundPlaying;
 
-	UPROPERTY()
-	TSet<TWeakObjectPtr<ATCharacter>> OverlappingThieves;
+
 
 	FTimerHandle SoundDurationTimerHandle;
+
+	void OnSoundDurationTimerEnd();
 
 public:
 	// Sets default values for this actor's properties
@@ -60,11 +57,14 @@ protected:
 	UFUNCTION()
 	void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
-	UFUNCTION()
-	void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
 
 	void UpdateBellSoundState();
-	void OnSoundDurationTimerEnd();
+
+	UFUNCTION(Client, Reliable)
+	void ClientPlayBellSound();
+
+
 
 public:
 	// Called every frame

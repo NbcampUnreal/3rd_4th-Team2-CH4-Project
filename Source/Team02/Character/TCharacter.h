@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Gimmick/TSpeedup.h"
 #include "OutGameUI/TTeamTypes.h"
+#include "InGameLevel/TPlayerState_InGame.h"
 #include "Gimmick/TBell.h" // Added for Police Bell Gimmick
 #include "TCharacter.generated.h"
 
@@ -13,7 +14,7 @@ class UCameraComponent;
 class USpringArmComponent;
 class USkeletalMesh;
 class ATBind;
-class APlayerState;
+// class APlayerState;
 
 struct FInputActionValue;
 
@@ -30,6 +31,7 @@ public:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void OnRep_PlayerState() override;
+	virtual void PossessedBy(AController* NewController) override;
 
 	void ApplySpeedBuff(float Multiplier, float Duration);
 
@@ -132,6 +134,6 @@ public:
 
 	bool bHasAppliedTeam = false;
 	ETeam LastAppliedTeam = ETeam::None;
-	TWeakObjectPtr<APlayerState> BoundPlayerState;
+	TWeakObjectPtr<ATPlayerState_InGame> BoundPlayerState;
 
-}; 
+};

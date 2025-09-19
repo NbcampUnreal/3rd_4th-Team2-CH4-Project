@@ -76,19 +76,6 @@ void ATBind::OnDisappear()
 
 void ATBind::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	// --- DEBUG LOGGING ---
-	if (GEngine && OtherActor)
-	{
-		FString TagsString = "Tags: ";
-		for (const FName& Tag : OtherActor->Tags)
-		{
-			TagsString += Tag.ToString() + TEXT(" ");
-		}
-		FString DebugMessage = FString::Printf(TEXT("TBind Overlapped Actor: %s | %s"), *OtherActor->GetName(), *TagsString);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, DebugMessage);
-	}
-	// --- END DEBUG LOGGING ---
-
 	ACharacter* Character = Cast<ACharacter>(OtherActor);
 	if (Character && Character->ActorHasTag(FName("Tagger")))
 	{

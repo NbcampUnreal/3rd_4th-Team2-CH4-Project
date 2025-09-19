@@ -8,6 +8,7 @@
 
 class ACharacter;
 class USphereComponent;
+class UStaticMeshComponent;
 
 
 UCLASS()
@@ -27,6 +28,9 @@ protected:
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USphereComponent> SphereComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> MeshComponent;
 
 	UPROPERTY(EditAnywhere, Category = "Gimmick")
 	float SpeedMultiplier = 1.5f;

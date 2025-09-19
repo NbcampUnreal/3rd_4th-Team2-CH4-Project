@@ -14,7 +14,6 @@
 // Sets default values
 ATBell::ATBell()
 {
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
 
@@ -24,23 +23,19 @@ ATBell::ATBell()
 	DetectionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("DetectionSphere"));
 	DetectionSphere->SetupAttachment(BellMesh);
 	DetectionSphere->SetSphereRadius(DetectionRadius);
-	DetectionSphere->SetCollisionProfileName(TEXT("OverlapAll")); // Or a custom profile
+	DetectionSphere->SetCollisionProfileName(TEXT("OverlapAll"));
 	DetectionSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	DetectionSphere->SetGenerateOverlapEvents(true);
 
 	AudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("AudioComponent"));
 	AudioComponent->SetupAttachment(BellMesh);
-	AudioComponent->bAutoActivate = false; // Don't play on spawn
-
-	CurrentSoundPlayedTime = 0.0f;
-	bIsSoundPlaying = false;
+	AudioComponent->bAutoActivate = false;
 }
 
 void ATBell::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(ATBell, CurrentSoundPlayedTime);
-	DOREPLIFETIME(ATBell, bIsSoundPlaying);
+
 }
 
 // Called when the game starts or when spawned
@@ -48,17 +43,25 @@ void ATBell::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (HasAuthority())
+	if (HasAuthority()) // Only run on the server
 	{
-		DetectionSphere->OnComponentBeginOverlap.AddDynamic(this, &ATBell::OnOverlapBegin);
-		DetectionSphere->OnComponentEndOverlap.AddDynamic(this, &ATBell::OnOverlapEnd);
+		// Set a timer to destroy the actor after MaxSoundDuration
+		GetWorldTimerManager().SetTimer(SoundDurationTimerHandle, this, &ATBell::OnSoundDurationTimerEnd, MaxSoundDuration, false);
 
-		// Initial check for overlapping actors
+		// Bind overlap events
+		DetectionSphere->OnComponentBeginOverlap.AddDynamic(this, &ATBell::OnOverlapBegin);
+
+		// Initial check for already overlapping actors
 		TArray<AActor*> OverlappingActors;
 		DetectionSphere->GetOverlappingActors(OverlappingActors, ATCharacter::StaticClass());
 		for (AActor* Actor : OverlappingActors)
 		{
-			OnOverlapBegin(DetectionSphere, Actor, Cast<UPrimitiveComponent>(Actor->GetRootComponent()), 0, false, FHitResult());
+			ATCharacter* Character = Cast<ATCharacter>(Actor);
+			if (Character && Character->ActorHasTag(FName("Hider")))
+			{
+				UpdateBellSoundState(); // Trigger sound state update
+				break; // Only need to find one Hider to play sound
+			}
 		}
 	}
 }
@@ -68,14 +71,7 @@ void ATBell::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (bIsSoundPlaying)
-	{
-		CurrentSoundPlayedTime += DeltaTime;
-		if (CurrentSoundPlayedTime >= MaxSoundDuration)
-		{
-			OnSoundDurationTimerEnd();
-		}
-	}
+	// No longer managing destruction via Tick, handled by timer in BeginPlay
 }
 
 void ATBell::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -88,46 +84,19 @@ void ATBell::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* Ot
 			// Check if the overlapping character has the "Hider" tag.
 			if (OtherCharacter->ActorHasTag(FName("Hider")))
 			{
-				OverlappingThieves.Add(OtherCharacter);
-				UpdateBellSoundState();
+				UpdateBellSoundState(); // Trigger sound state update
 			}
 		}
 	}
 }
 
-void ATBell::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-	if (HasAuthority() && OtherActor)
-	{
-		ATCharacter* OtherCharacter = Cast<ATCharacter>(OtherActor);
-		if (OtherCharacter)
-		{
-			OverlappingThieves.Remove(OtherCharacter);
-			UpdateBellSoundState();
-		}
-	}
-}
 
 void ATBell::UpdateBellSoundState()
 {
-	if (OverlappingThieves.Num() > 0 && CurrentSoundPlayedTime < MaxSoundDuration)
+	// If BellSound is assigned and AudioComponent is not already playing
+	if (BellSound && (!AudioComponent->IsPlaying()))
 	{
-		// If there are thieves nearby and sound is not playing, start it
-		if (BellSound && (!AudioComponent->IsPlaying()))
-		{
-			AudioComponent->SetSound(BellSound);
-			AudioComponent->Play();
-			bIsSoundPlaying = true;
-		}
-	}
-	else
-	{
-		// No thieves nearby or max duration reached, stop the sound
-		if (AudioComponent->IsPlaying())
-		{
-			AudioComponent->Stop();
-			bIsSoundPlaying = false;
-		}
+		ClientPlayBellSound(); // Call Client RPC to play sound
 	}
 }
 
@@ -137,8 +106,14 @@ void ATBell::OnSoundDurationTimerEnd()
 	{
 		AudioComponent->Stop();
 	}
-	bIsSoundPlaying = false;
-	// Optionally destroy the bell actor after its sound duration is over
-	// Destroy();
+	Destroy();
 }
 
+void ATBell::ClientPlayBellSound_Implementation()
+{
+	if (BellSound && !AudioComponent->IsPlaying())
+	{
+		AudioComponent->SetSound(BellSound);
+		AudioComponent->Play();
+	}
+}

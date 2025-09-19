@@ -10,7 +10,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/SkeletalMesh.h"
-#include "OutGameUI/TPlayerState.h"
+#include "InGameLevel/TPlayerState_InGame.h"
 #include "OutGameUI/TTeamTypes.h"
 #include "Gimmick/TBind.h"
 #include "Gimmick/TSpeedup.h"
@@ -119,12 +119,19 @@ void ATCharacter::BeginPlay()
 	bCanUseBindSkill = true;
 	bCanUseSpeedupSkill = true;
 	bCanUseBellSkill = true;
-	UpdateTeamTags();
 }
 
 void ATCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
+	UpdateTeamTags();
+}
+
+void ATCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	// Server-side: PlayerState is guaranteed to be valid here
 	UpdateTeamTags();
 }
 
@@ -215,7 +222,7 @@ void ATCharacter::SprintStop(const FInputActionValue& Value)
 
 void ATCharacter::AttackStart(const FInputActionValue& Value)
 {
-	
+
 	if (bIsAttacking)
 	{
 		return;
@@ -235,7 +242,7 @@ void ATCharacter::ServerAttack_Implementation()
 {
 	// 팀 Police만 공격 가능
 	// 테스트용으로 잠시 막음
-	/*ATPlayerState* PS = GetPlayerState<ATPlayerState>();
+	/*ATPlayerState_InGame* PS = GetPlayerState<ATPlayerState_InGame>();
 	if (!PS || PS->Team != ETeam::Police)
 	{
 		UE_LOG(LogTemp, Verbose, TEXT("[Char] Attack denied (server): Only Police can attack"));
@@ -308,13 +315,8 @@ void ATCharacter::Server_UseSkill_Implementation()
 		return;
 	}
 
-	ATPlayerState* PS = GetPlayerState<ATPlayerState>();
+	ATPlayerState_InGame* PS = GetPlayerState<ATPlayerState_InGame>();
 	if (!PS)
-	{
-		return;
-	}
-
-	if (PS->Team != ETeam::Thief)
 	{
 		return;
 	}
@@ -330,8 +332,7 @@ void ATCharacter::Server_UseSkill_Implementation()
 		return;
 	}
 
-	bCanUseBindSkill = false;
-	const FVector SpawnLocation = GetActorLocation();
+	bCanUseBindSkill = false;	const FVector SpawnLocation = GetActorLocation();
 	const FRotator SpawnRotation = GetActorRotation();
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
@@ -347,13 +348,8 @@ void ATCharacter::Server_UseSkill2_Implementation()
 		return;
 	}
 
-	ATPlayerState* PS = GetPlayerState<ATPlayerState>();
+	ATPlayerState_InGame* PS = GetPlayerState<ATPlayerState_InGame>();
 	if (!PS)
-	{
-		return;
-	}
-
-	if (PS->Team != ETeam::Thief)
 	{
 		return;
 	}
@@ -386,16 +382,12 @@ void ATCharacter::Server_UseSkill3_Implementation()
 		return;
 	}
 
-	ATPlayerState* PS = GetPlayerState<ATPlayerState>(); // IMPORTANT: This still needs to be ATPlayerState_InGame
+	ATPlayerState_InGame* PS = GetPlayerState<ATPlayerState_InGame>(); // IMPORTANT: This still needs to be ATPlayerState_InGame
 	if (!PS)
 	{
 		return;
 	}
 
-	if (PS->Team != ETeam::Police) // Check for Police team
-	{
-		return;
-	}
 
 	if (!BellSkillActorClass)
 	{
@@ -453,7 +445,7 @@ void ATCharacter::UpdateMovementSpeed()
 
 void ATCharacter::UpdateTeamTags()
 {
-	ATPlayerState* PS = GetPlayerState<ATPlayerState>();
+	ATPlayerState_InGame* PS = GetPlayerState<ATPlayerState_InGame>();
 	if (!PS) return;
 
 	// Remove existing tags first
