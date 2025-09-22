@@ -11,7 +11,7 @@ class UUserWidget;
 class UInputMappingContext;
 class UInputAction;
 class ULobbyWidget;
-
+class UTInGameHUD;
 
 UCLASS()
 class TEAM02_API ATUPlayerController : public APlayerController
@@ -33,11 +33,12 @@ public:
 	// ===== UI 에셋 =====
 	UPROPERTY(EditDefaultsOnly, Category = "UI|Title")
 	TSubclassOf<UUserWidget> TitleWidgetClass; // 타이틀 위젯(선택)
-
-
+	
 	UPROPERTY(EditDefaultsOnly, Category = "UI|Lobby")
 	TSubclassOf<ULobbyWidget> LobbyWidgetClass; // 로비 위젯
-
+	
+	UPROPERTY(EditDefaultsOnly, Category = "UI|InGame")
+	TSubclassOf<UTInGameHUD> InGameHUDClass;
 
 	// ===== 인풋 매핑/액션 =====
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
@@ -55,9 +56,9 @@ public:
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	TObjectPtr<UInputAction> Skill1Action = nullptr; // ✅ 복구
+	TObjectPtr<UInputAction> Skill1Action = nullptr;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	TObjectPtr<UInputAction> Skill2Action; // ✅ 복구
+	TObjectPtr<UInputAction> Skill2Action;
 
 
 
@@ -91,7 +92,7 @@ public:
 
 
 	UFUNCTION(Server, Reliable)
-	void Server_CycleTeam(); // ✅ 무인자: 서버에서 NextTeam 계산
+	void Server_CycleTeam();
 
 
 	UFUNCTION(Server, Reliable)
@@ -133,4 +134,10 @@ private:
 	UFUNCTION() void HandleSkill2(const FInputActionValue& Value);
 	UFUNCTION(Server, Reliable) void Server_HandleSkill(int32 SkillIndex, float Magnitude);
 	UFUNCTION(NetMulticast, Unreliable) void Multicast_SkillLog(int32 SkillIndex, const FString& Who, float Magnitude);
+
+	// UI
+	UPROPERTY() TObjectPtr<UTInGameHUD> InGameHUDInstance = nullptr;
+	
+	void ShowInGameHUD();
+	void HideInGameHUD();
 };

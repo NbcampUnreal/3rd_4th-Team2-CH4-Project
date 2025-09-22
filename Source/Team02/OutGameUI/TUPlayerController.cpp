@@ -23,6 +23,9 @@
 #include "OutGameUI/TGameStateBase_Lobby.h" // OnLobbyCountsChanged 델리게이트
 #include "TPlayerState.h" // Team/bReady + OnRep/델리게이트
 
+#include "InGameUI/TInGameHUD.h"
+#include "InGameLevel/TGameStateBase_InGame.h"
+#include "TimerManager.h"
 
 ATUPlayerController::ATUPlayerController()
 {
@@ -81,24 +84,17 @@ void ATUPlayerController::BeginPlay()
     }
     else
     {
-        HideAllUI();
-        UE_LOG(LogTemp, Warning, TEXT("[PC][BeginPlay] Non-Title/Lobby map: UI hidden"));
+        HideAllUI();              // 타이틀/로비 UI 숨김
+        ShowInGameHUD();          // 새로 추가
+        FInputModeGameOnly GameOnly;
+        SetInputMode(GameOnly);
+        bShowMouseCursor       = false;
+        bEnableClickEvents     = false;
+        bEnableMouseOverEvents = false;
 
-        // 🔵 인게임 시작 즉시 포커스/커서/IMC 보장 (중복 호출 무해)
-        if (IsLocalController())
-        {
-            FInputModeGameOnly GameOnly;
-            SetInputMode(GameOnly);
-            bShowMouseCursor       = false;
-            bEnableClickEvents     = false;
-            bEnableMouseOverEvents = false;
-
-            UWidgetBlueprintLibrary::SetFocusToGameViewport();
-
-            // 매핑 컨텍스트 재적용
-            ApplyInGameInputMapping();
-            UE_LOG(LogTemp, Warning, TEXT("[PC][BeginPlay] GameOnly + Mapping applied (Non-Title/Lobby)"));
-        }
+        UWidgetBlueprintLibrary::SetFocusToGameViewport();
+        ApplyInGameInputMapping();
+        UE_LOG(LogTemp, Warning, TEXT("[PC][BeginPlay] GameOnly + Mapping + InGameHUD"));
     }
 }
 
@@ -246,7 +242,8 @@ void ATUPlayerController::OnPossess(APawn* InPawn)
     if (!IsTitleMap() && !IsLobbyMap()) // 인게임 맵
     {
         HideAllUI();
-
+        ShowInGameHUD();
+        
         // GameOnly + 커서/이벤트 OFF
         FInputModeGameOnly GameOnly;
         SetInputMode(GameOnly);
@@ -271,10 +268,52 @@ void ATUPlayerController::OnPossess(APawn* InPawn)
 
 void ATUPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    HideInGameHUD();
     HideAllUI();
     Super::EndPlay(EndPlayReason);
 }
 
+void ATUPlayerController::ShowInGameHUD()
+{
+    if (InGameHUDInstance || !InGameHUDClass) return;
+
+    InGameHUDInstance = CreateWidget<UTInGameHUD>(this, InGameHUDClass);
+    if (!InGameHUDInstance) return;
+
+    InGameHUDInstance->AddToViewport(1000);
+
+    // GameState 델리게이트 바인딩 (타이머/스코어/킬)
+    if (auto GS = GetWorld()->GetGameState<ATGameStateBase_InGame>())
+    {
+        GS->OnTimerUpdated.AddDynamic(InGameHUDInstance, &UTInGameHUD::OnTimerUpdated);
+        GS->OnScoreUpdated.AddDynamic(InGameHUDInstance, &UTInGameHUD::OnScoreUpdated);
+        GS->OnKillEvent.AddDynamic(InGameHUDInstance, &UTInGameHUD::OnKillEvent);
+
+        // 초기 스냅샷
+        InGameHUDInstance->OnTimerUpdated(GS->RemainingSec);
+        InGameHUDInstance->OnScoreUpdated(GS->ThiefWins, GS->PoliceWins);
+    }
+
+    // 스태미너 Pull 타이머(0.1s)
+    FTimerHandle StaminaTick;
+    GetWorld()->GetTimerManager().SetTimer(
+        StaminaTick,
+        FTimerDelegate::CreateWeakLambda(this, [this]()
+        {
+            if (InGameHUDInstance) InGameHUDInstance->RefreshStaminaBar();
+        }),
+        0.1f, true
+    );
+}
+
+void ATUPlayerController::HideInGameHUD()
+{
+    if (InGameHUDInstance)
+    {
+        InGameHUDInstance->RemoveFromParent();
+        InGameHUDInstance = nullptr;
+    }
+}
 // ===== 타이틀 → 로비 전환 =====
 void ATUPlayerController::RequestEnterLobby()
 {
