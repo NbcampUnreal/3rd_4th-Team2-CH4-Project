@@ -83,6 +83,7 @@ void ATGameStateBase_Lobby::RecalcCounts()
 
 void ATGameStateBase_Lobby::OnRep_LobbyCountdown()
 {
+	OnLobbyCountsChanged.Broadcast();
 }
 
 

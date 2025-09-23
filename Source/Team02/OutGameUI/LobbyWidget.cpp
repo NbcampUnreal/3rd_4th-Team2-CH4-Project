@@ -82,6 +82,12 @@ void ULobbyWidget::RefreshUI()
 					FString::Printf(TEXT("Ready %d / %d"), GS->GetReadyCount(), GS->GetTotalPlayers())));
 			}
 
+			if (TxtCountdown)  // UTextBlock* TxtCountdown 를 BP에 추가해야 함
+			{
+				TxtCountdown->SetText(FText::FromString(
+					FString::Printf(TEXT("Match starts in: %d"), GS->LobbyCountdown)));
+			}
+
 			// 전체 목록 표시
 			if (VBoxPlayers)
 			{

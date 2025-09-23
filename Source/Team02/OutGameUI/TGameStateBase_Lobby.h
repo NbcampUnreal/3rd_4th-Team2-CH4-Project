@@ -39,7 +39,7 @@ public:
 	UPROPERTY(ReplicatedUsing=OnRep_Counts, BlueprintReadOnly, Category="Lobby")
 	int32 TotalPlayers = 0;
 	
-	UPROPERTY(Replicated, BlueprintReadOnly, Category="Lobby")
+	UPROPERTY(ReplicatedUsing=OnRep_LobbyCountdown, BlueprintReadOnly, Category="Lobby")
 	int32 LobbyCountdown = 0;
 	
 	void RecalcCounts();

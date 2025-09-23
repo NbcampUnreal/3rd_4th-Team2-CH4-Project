@@ -25,6 +25,8 @@ public:
 
 	UPROPERTY(meta=(BindWidget)) UTextBlock* TxtTotals = nullptr;
 	UPROPERTY(meta=(BindWidget)) UVerticalBox* VBoxPlayers = nullptr;
+
+	UPROPERTY(meta=(BindWidget)) UTextBlock* TxtCountdown = nullptr; 
 	
 	UFUNCTION(BlueprintCallable) void RefreshUI();
 

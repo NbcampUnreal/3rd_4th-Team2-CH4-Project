@@ -123,6 +123,11 @@ void ATUPlayerController::ShowLobbyUI()
             LobbyWidgetInstance->SetVisibility(ESlateVisibility::Visible);
         }
     }
+
+    if (LobbyWidgetInstance)
+    {
+        LobbyWidgetInstance->RefreshUI();
+    }
 }
 
 void ATUPlayerController::HideAllUI()
