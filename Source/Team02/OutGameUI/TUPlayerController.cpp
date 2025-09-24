@@ -322,20 +322,36 @@ void ATUPlayerController::HideInGameHUD()
 // ===== 타이틀 → 로비 전환 =====
 void ATUPlayerController::RequestEnterLobby()
 {
-    if (HasAuthority() && GetWorld())
+    const ENetMode NM = GetNetMode();
+
+    // 전용/리슨 서버에서만 방 열기
+    if (IsRunningDedicatedServer() || NM == NM_ListenServer)
     {
-        const FString TravelURL = LobbyMapPath + TEXT("?listen");
-        UE_LOG(LogTemp, Warning, TEXT("[TITLE] ServerTravel -> %s"), *TravelURL);
-        GetWorld()->ServerTravel(*TravelURL);
+        const FString Url = TEXT("/Game/Team02/OutGameUI/Map/LobbyMap?listen");
+        UE_LOG(LogTemp, Warning, TEXT("[TITLE] ServerTravel -> %s"), *Url);
+        GetWorld()->ServerTravel(*Url);
         return;
     }
 
-    UE_LOG(LogTemp, Warning, TEXT("[TITLE] Call Server_RequestEnterLobby (client)"));
-    Server_RequestEnterLobby();
+    // 이미 서버에 붙어있는 클라면 서버 RPC로만 요청
+    if (NM == NM_Client)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[TITLE] RequestEnterLobby via server RPC"));
+        Server_RequestEnterLobby();
+        return;
+    }
+
+    // Standalone(서버 안 붙은 클라)은 먼저 JoinServer 필요
+    UE_LOG(LogTemp, Warning, TEXT("[TITLE] Not connected. Call JoinServer(IP:Port) first."));
 }
 
 void ATUPlayerController::JoinServer(const FString& InIPAddress)
 {
+    if (InIPAddress.IsEmpty())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[TITLE] IP empty. Not joining."));
+        return;
+    }
     UE_LOG(LogTemp, Warning, TEXT("[TITLE] ClientTravel -> %s"), *InIPAddress);
     ClientTravel(InIPAddress, ETravelType::TRAVEL_Absolute);
 }
@@ -415,4 +431,12 @@ void ATUPlayerController::RefreshLobbyFromPS()
     {
         LobbyWidgetInstance->RefreshUI();       // ULobbyWidget 구현 호출
     }
+}
+
+void ATUPlayerController::PreClientTravel(const FString& PendingURL, ETravelType TravelType, bool bIsSeamlessTravel)
+{
+    UE_LOG(LogTemp, Warning, TEXT("[CLIENT][PC] PreClientTravel URL=%s Type=%d Seamless=%d"),
+        *PendingURL, (int)TravelType, bIsSeamlessTravel);
+
+    Super::PreClientTravel(PendingURL, TravelType, bIsSeamlessTravel);
 }

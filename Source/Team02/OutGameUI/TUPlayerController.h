@@ -22,6 +22,7 @@ class TEAM02_API ATUPlayerController : public APlayerController
 public:
 	ATUPlayerController();
 
+	virtual void PreClientTravel(const FString& PendingURL, ETravelType TravelType, bool bIsSeamlessTravel) override;
 
 	// ===== 생명주기 =====
 	virtual void BeginPlay() override; // 맵 진입 시 UI/모드 설정 (Title/Lobby 구분)

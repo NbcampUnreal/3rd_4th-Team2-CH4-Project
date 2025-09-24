@@ -2,7 +2,7 @@
 #include "Components/Button.h"
 #include "Components/EditableText.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "InGameUI/TTitlePlayerController.h"
+#include "OutGameUI/TUPlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/Engine.h"
 
@@ -53,13 +53,10 @@ static FString NormalizeAddr(const FString& Raw, bool& bOutValid)
 		{
 			PortStr = TEXT("7777");
 		}
-		else
-		{
-			// 17777 같은 오타 보정은 선택
-			if (PortStr == TEXT("17777")) PortStr = TEXT("7777");
-		}
+		
 		S = Host + TEXT(":") + PortStr;
 	}
+
 	else
 	{
 		// 포트가 없으면 기본 포트
@@ -100,31 +97,48 @@ void UTTitleLayout::NativeConstruct()
 
 void UTTitleLayout::OnPlayButtonClicked()
 {
-	ATTitlePlayerController* PC = GetOwningPlayer<ATTitlePlayerController>();
+	ATUPlayerController* PC = GetOwningPlayer<ATUPlayerController>();
 	if (!PC) return;
 
-	const FString Raw = ServerIPEditableText ? ServerIPEditableText->GetText().ToString() : FString();
-	UWorld* W = GetWorld(); if (!W) return;
+	UWorld* W = GetWorld();
+	if (!W) return;
 
 	const ENetMode NM = W->GetNetMode();
-	LOGPLAY("Clicked. NetMode=%d HasAuthority=%d IP='%s'", (int)NM, (int)PC->HasAuthority(), *Raw);
 
-	if (Raw.IsEmpty())
+	if (W->WorldType == EWorldType::PIE)
 	{
-		if (NM == NM_Standalone)
+		// 클라이언트 PIE 창이면: 서버에 "로비로 이동"만 요청
+		if (NM == NM_Client)
 		{
-			LOGPLAY("Host in Standalone -> OpenLevel(LobbyMap, listen)");
-			UGameplayStatics::OpenLevel(W, FName(TEXT("/Game/Team02/OutGameUI/Map/LobbyMap")), true, TEXT("listen"));
-		}
-		else
-		{
-			LOGPLAY("Request server to travel -> Server_RequestEnterLobby()");
+			UE_LOG(LogTemp, Log, TEXT("[TITLE-PLAY][PIE] Client -> Server_RequestEnterLobby()"));
 			PC->Server_RequestEnterLobby();
+			return;
 		}
+		// 리슨 서버 PIE 창이면: 로비를 리슨으로 오픈
+		if (NM == NM_ListenServer || PC->HasAuthority())
+		{
+			UE_LOG(LogTemp, Log, TEXT("[TITLE-PLAY][PIE] ListenServer -> ServerTravel Lobby?listen"));
+			W->ServerTravel(TEXT("/Game/Team02/OutGameUI/Map/LobbyMap?listen"));
+			return;
+		}
+		// Standalone PIE 같은 예외 상황이면 그냥 종료
+		UE_LOG(LogTemp, Log, TEXT("[TITLE-PLAY][PIE] Unknown net mode. Do nothing."));
 		return;
 	}
 
-	// IP가 입력됨 → 정규화 + 유효성 검사
+	const FString Raw = ServerIPEditableText ? ServerIPEditableText->GetText().ToString() : FString();
+
+	if (Raw.IsEmpty())
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red,
+				TEXT("서버 주소를 입력하세요 (예: 127.0.0.1:7777)"));
+		}
+		LOGPLAY("No address -> not joining");
+		return;
+	}
+
 	bool bAddrValid = false;
 	const FString Addr = NormalizeAddr(Raw, bAddrValid);
 
@@ -134,13 +148,13 @@ void UTTitleLayout::OnPlayButtonClicked()
 		if (GEngine)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red,
-				TEXT("잘못된 주소입니다. 예) 127.0.0.1 또는 127.0.0.1:7777"));
+				TEXT("잘못된 주소입니다. 예) 127.0.0.1:7777"));
 		}
 		return;
 	}
 
 	LOGPLAY("Client Join -> %s", *Addr);
-	PC->JoinServer(Addr);
+	PC->JoinServer(Addr); // ClientTravel 사용
 }
 
 
