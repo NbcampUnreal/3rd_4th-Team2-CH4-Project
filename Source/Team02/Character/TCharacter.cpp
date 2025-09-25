@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Character/TCharacter.h"
@@ -14,6 +14,9 @@
 #include "OutGameUI/TTeamTypes.h"
 #include "Gimmick/TBind.h"
 #include "Gimmick/TSpeedup.h"
+#include "InGameLevel/TGameModeBase_InGame.h"              // NEW
+#include "GameFramework/PlayerState.h"                     // NEW
+#include "GameFramework/Controller.h"                            //  NEW
 
 // Sets default values
 ATCharacter::ATCharacter()
@@ -279,8 +282,25 @@ void ATCharacter::PerformAttack()
 				UE_LOG(LogTemp, Log, TEXT("Melee hit: %s"), *Other->GetName());
 
 				// 한방에 제거(서버 권한)
-				Other->Destroy();
+				 // 기존: 그냥 Destroy()만 호출 → 라운드/킬로그가 안 굴렀음
+				//Other->Destroy();
 
+				  // 변경: 서버에서 GameMode에게 '처치' 보고 후 파괴 
+				if (HasAuthority())                                              //  NEW
+				{                                                                 //  NEW
+					AController* KillerCtrl = GetController();                    //  NEW
+					AController* VictimCtrl = nullptr;                            //  NEW
+					if (APawn* VictimPawn = Cast<APawn>(Other))                   //  NEW
+					{                                                             //  NEW
+						VictimCtrl = VictimPawn->GetController();                 //  NEW
+					}                                                             //  NEW
+					if (ATGameModeBase_InGame* GM =                                //  NEW
+						GetWorld()->GetAuthGameMode<ATGameModeBase_InGame>())     //  NEW
+					{                                                             //  NEW
+						GM->HandleEliminated(KillerCtrl, VictimCtrl);             //  NEW
+					}                                                             //  NEW
+					Other->Destroy();                                             //  NEW
+				}
 				break; // 첫 타겟만
 			}
 		}

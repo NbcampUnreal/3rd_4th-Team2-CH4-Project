@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/HorizontalBox.h"
+#include "Components/TextBlock.h"
 #include "TInGameHUD.generated.h"
 
 class UProgressBar; class UTextBlock; class UHorizontalBox; class UVerticalBox;
@@ -45,5 +47,10 @@ private:
     TWeakObjectPtr<AActor> CachedLocalPawn;
 
     // 내부: ●●● 점으로 3선승 표시
-    void PaintWinDots(UHorizontalBox* Box, int32 Wins);
+    
+    // 기존 함수 시그니처 유지하되 동작이 바뀜(총 개수=WinsToFinish, ○/●로 그림)
+    void PaintWinDots(UHorizontalBox* Box, int32 Wins); // // CHANGE: 내부 로직 변경(고정 3개 → WinsToFinish개, ○/●)
+
+    // 새 헬퍼: 팀 한 줄을 WinsToFinish개 도트로 그리기(○/●)
+    void PaintTeamDots(UHorizontalBox* Box, int32 Wins, int32 WinsToFinish); //  NEW
 };

@@ -2,11 +2,13 @@
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "Components/HorizontalBox.h"
+#include "Components/HorizontalBoxSlot.h"   // NEW
 #include "Components/VerticalBox.h"
 #include "Components/Image.h"
 #include "Blueprint/WidgetTree.h"
 #include "GameFramework/PlayerController.h"
 #include "UObject/UnrealType.h" // 리플렉션(FProperty) 접근용
+#include "InGameLevel/TGameStateBase_InGame.h" // // NEW (WinsToFinish 읽기용)
 
 void UTInGameHUD::OnTimerUpdated(int32 RemainingSec)
 {
@@ -18,14 +20,49 @@ void UTInGameHUD::OnTimerUpdated(int32 RemainingSec)
 
 void UTInGameHUD::PaintWinDots(UHorizontalBox* Box, int32 Wins)
 {
-    if (!Box || !WidgetTree) return;
-    Box->ClearChildren();
-    for (int32 i = 0; i < 3; ++i)
+    if (!Box) return;
+    //Box->ClearChildren();
+    //for (int32 i = 0; i < 3; ++i)
+    // {
+    //    UImage* Dot = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
+    //    실제로는 브러시(원형 텍스처) 지정. 불투명도만으로 승수 표현. 나중에 수정해야함
+    //    Dot->SetOpacity(i < Wins ? 1.0f : 0.2f);
+    //    Box->AddChild(Dot);
+    //}
+
+    // CHANGE: GameState의 WinsToFinish(기본 3)를 읽어서 총 개수를 결정하고,
+    // i < Wins → '●', 그 외 → '○' 로 표기
+    int32 WinsToFinish = 3; // 기본값
+    if (const ATGameStateBase_InGame* GS = GetWorld() ? GetWorld()->GetGameState<ATGameStateBase_InGame>() : nullptr)  // NEW
     {
-        UImage* Dot = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
-        // 실제로는 브러시(원형 텍스처) 지정. 불투명도만으로 승수 표현. 나중에 수정해야함
-        Dot->SetOpacity(i < Wins ? 1.0f : 0.2f);
-        Box->AddChild(Dot);
+        WinsToFinish = GS->WinsToFinish; //  NEW
+    }
+
+    PaintTeamDots(Box, Wins, WinsToFinish); //  NEW
+}
+
+// NEW: 텍스트 도트로 그리기(필요하면 UImage로 바꿔도 됨)
+void UTInGameHUD::PaintTeamDots(UHorizontalBox* Box, int32 Wins, int32 WinsToFinish)
+{
+    if (!Box) return;
+    Box->ClearChildren(); //  NEW
+
+    for (int32 i = 0; i < WinsToFinish; ++i) //  NEW
+    {
+        UTextBlock* Dot = NewObject<UTextBlock>(Box); //  NEW
+        const bool bFilled = (i < Wins);              //  NEW
+        Dot->SetText(FText::FromString(bFilled ? TEXT("●") : TEXT("○"))); //  NEW
+        Dot->SetJustification(ETextJustify::Center);  //  NEW
+
+        // ★ NEW: 글자 크기로 원 크기 조절
+        FSlateFontInfo FontInfo = Dot->Font;
+        FontInfo.Size = 64;              // 원하는 크기 (기본은 12~24 정도)
+        Dot->SetFont(FontInfo);
+
+        if (UHorizontalBoxSlot* DotSlot = Box->AddChildToHorizontalBox(Dot)) //  NEW
+        {
+            DotSlot->SetPadding(FMargin(2.f, 0.f)); //  NEW
+        }
     }
 }
 

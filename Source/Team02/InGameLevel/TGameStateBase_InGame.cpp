@@ -1,6 +1,7 @@
 ﻿#include "InGameLevel/TGameStateBase_InGame.h"
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
+#include "InGameLevel/TGameModeBase_InGame.h"   //  NEW (시간 만료 통지용)
 
 void ATGameStateBase_InGame::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -26,6 +27,16 @@ void ATGameStateBase_InGame::TickTimer()
     {
         GetWorldTimerManager().ClearTimer(RoundTimerHandle);
         // 승패/다음 라운드는 GameMode가 결정
+
+         // ★ NEW: 시간 만료 → GameMode에 통지(Thief 승리 규칙)
+        if (HasAuthority()) // 서버에서만
+        {
+            if (ATGameModeBase_InGame* GM = GetWorld()->GetAuthGameMode<ATGameModeBase_InGame>()) //  NEW
+            {
+                GM->HandleRoundTimeOver(); //  NEW  ( GameMode에 구현)
+            }
+        }
+        return;
     }
     OnRep_RemainingSec(); // HUD 갱신
 }

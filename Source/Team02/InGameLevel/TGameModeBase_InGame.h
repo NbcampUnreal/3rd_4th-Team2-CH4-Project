@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "OutGameUI/TTeamTypes.h"
 #include "TGameModeBase_InGame.generated.h"
 
 class ATPlayerState_InGame;
@@ -54,4 +55,31 @@ public:
 	void TryStartRoundIfReady();
 	void EndRound(APlayerState* LastVictimPS);
 	void EndMatchAndShowResult();
+
+	//  시간 만료(Thief가 3분 버팀)
+	UFUNCTION(BlueprintCallable, Category = "Round")
+	void HandleRoundTimeOver(); // NEW
+
+protected:
+	//  SeamlessTravel 이후에도 라운드 시작을 보장하기 위해 훅 추가
+	virtual void BeginPlay() override;                 //  NEW
+	virtual void PostSeamlessTravel() override;        //  NEW
+	virtual void HandleSeamlessTravelPlayer(AController*& C) override; //  NEW
+
+	//  심리스 직후 2인 조건 충족을 기다리는 짧은 폴링 타이머
+	FTimerHandle SeamlessStartRoundRetryHandle;        // NEW
+	int32 SeamlessStartRoundRetries = 0;               // NEW (최대 횟수 제한)
+
+	//  라운드 종료 → 잠시 후 리스폰 & 다음 라운드 시작
+	void EndRoundByTeamWin(ETeam WinnerTeam);     //  NEW
+	void RespawnAllPlayers();                     //  NEW
+	void StartNextRound();                        //  NEW (타이머 콜백)
+
+	FTimerHandle RoundResetTimerHandle;           //  NEW
+	UPROPERTY(EditDefaultsOnly, Category = "Round")
+	float RoundResetDelay = 1.5f;                 //  NEW (잠깐 멈춘 느낌용)
+
+	//  NPC 리스폰은 BP 훅으로 처리(프로젝트별 스폰 방식 다르므로)
+	UFUNCTION(BlueprintImplementableEvent, Category = "Round")
+	void OnRoundReset_BP();                       //  NEW (선택 구현: NPC 전체 리스폰)
 };
