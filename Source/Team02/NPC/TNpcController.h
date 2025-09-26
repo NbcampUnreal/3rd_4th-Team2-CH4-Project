@@ -26,7 +26,6 @@ protected:
 
 public:
 	static const float PatrolRadius;
-	static int32 ShowAIDebug;
 
 	static const FName StartPatrolPositionKey;
 	static const FName EndPatrolPositionKey;

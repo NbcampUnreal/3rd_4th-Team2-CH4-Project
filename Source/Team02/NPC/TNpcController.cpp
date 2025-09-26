@@ -4,25 +4,15 @@
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardData.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "Kismet/KismetSystemLibrary.h"
 
 const float ATNpcController::PatrolRadius(500.f);
-int32 ATNpcController::ShowAIDebug(0);
 const FName ATNpcController::StartPatrolPositionKey(TEXT("StartPatrolPosition"));
 const FName ATNpcController::EndPatrolPositionKey(TEXT("EndPatrolPosition"));
 const FName ATNpcController::PersonalityTypeKey(TEXT("PersonalityType"));
 const FName ATNpcController::WaitTimeKey(TEXT("WaitTime"));
 
-FAutoConsoleVariableRef CVarShowAIDebug(
-	TEXT("NXProject.ShowAIDebug"),
-	ATNpcController::ShowAIDebug,
-	TEXT(""),
-	ECVF_Cheat);
-
 ATNpcController::ATNpcController()
 {
-	UE_LOG(LogTemp,Warning,TEXT("TNpcController Constructor Called"));
-	
 	Blackboard=CreateDefaultSubobject<UBlackboardComponent>(TEXT("Blackboard"));
 	BrainComponent=CreateDefaultSubobject<UBehaviorTreeComponent>(TEXT("BrainComponent"));
 }
@@ -62,10 +52,6 @@ void ATNpcController::BeginAI(APawn* InPawn)
 			int32 RandomPersonalityType=FMath::RandRange(0,2);
 			BlackboardComponent->SetValueAsInt(PersonalityTypeKey,RandomPersonalityType);
 		}
-		if (ShowAIDebug==1)
-		{
-			UKismetSystemLibrary::PrintString(this,FString::Printf(TEXT("BeginAI")));
-		}
 	}
 }
 
@@ -75,11 +61,6 @@ void ATNpcController::EndAI()
 	if (IsValid(BehaviorTreeComponent)==true)
 	{
 		BehaviorTreeComponent->StopTree();
-
-		if (ShowAIDebug==1)
-		{
-			UKismetSystemLibrary::PrintString(this,FString::Printf(TEXT("EndAI")));
-		}
 	}
 }
 
