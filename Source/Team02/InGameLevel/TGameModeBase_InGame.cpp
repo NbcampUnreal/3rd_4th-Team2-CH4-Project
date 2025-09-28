@@ -234,7 +234,10 @@ void ATGameModeBase_InGame::EndRoundByTeamWin(ETeam WinnerTeam)                 
 
         if (bFinished)
         {
-            EndMatchAndShowResult();                                                         // 기존 함수 사용 (결과 화면)
+           // EndMatchAndShowResult();  단순 호출 → 실제 종료 처리로 변경 
+            const EInGameTeam Winner = (GS->ThiefWins >= GS->WinsToFinish) ? EInGameTeam::Thief : EInGameTeam::Police; // ★ NEW
+            GS->FinishMatch(Winner);                                      // ★ NEW
+            EndMatchAndShowResult();
             return;
         }
     }
@@ -334,7 +337,12 @@ void ATGameModeBase_InGame::EndRound(APlayerState* LastVictimPS)
             (GS->PoliceWins >= GS->WinsToFinish) ||
             (GS->CurrentRound > GS->MaxRounds);
 
-        if (bFinish) EndMatchAndShowResult();
+        if (bFinish) //EndMatchAndShowResult(); 단순 호출 → 실제 종료 처리로 변경
+        {
+            const EInGameTeam Winner = (GS->ThiefWins >= GS->WinsToFinish) ? EInGameTeam::Thief : EInGameTeam::Police; // ★ NEW
+            GS->FinishMatch(Winner);                                      // ★ NEW
+            EndMatchAndShowResult();                                      // ★ NEW (UI/후처리 진입점)
+        }
         else
         {
             //GS->StartRound(RoundSeconds); //즉시시작 금지

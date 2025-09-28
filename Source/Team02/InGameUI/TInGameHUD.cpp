@@ -75,7 +75,7 @@ void UTInGameHUD::OnScoreUpdated(int32 ThiefWins, int32 PoliceWins)
     if (RoundText)
     {
         const int32 RoundGuess = 1 + ThiefWins + PoliceWins;
-        RoundText->SetText(FText::FromString(FString::Printf(TEXT("Round %d / 5"), FMath::Clamp(RoundGuess, 1, 5))));
+        RoundText->SetText(FText::FromString(FString::Printf(TEXT("%d / 5"), FMath::Clamp(RoundGuess, 1, 5))));
     }
 }
 

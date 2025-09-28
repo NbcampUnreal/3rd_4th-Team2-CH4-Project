@@ -1,4 +1,4 @@
-#include "TUPlayerController.h"
+﻿#include "TUPlayerController.h"
 #include "EngineUtils.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "GameFramework/Character.h"
@@ -25,6 +25,7 @@
 
 #include "InGameUI/TInGameHUD.h"
 #include "InGameLevel/TGameStateBase_InGame.h"
+#include "InGameLevel/TPlayerState_InGame.h" 
 #include "TimerManager.h"
 
 ATUPlayerController::ATUPlayerController()
@@ -293,7 +294,8 @@ void ATUPlayerController::ShowInGameHUD()
         GS->OnTimerUpdated.AddDynamic(InGameHUDInstance, &UTInGameHUD::OnTimerUpdated);
         GS->OnScoreUpdated.AddDynamic(InGameHUDInstance, &UTInGameHUD::OnScoreUpdated);
         GS->OnKillEvent.AddDynamic(InGameHUDInstance, &UTInGameHUD::OnKillEvent);
-
+        GS->OnMatchFinished.AddDynamic(this, &ATUPlayerController::OnMatchFinished_ShowResult); //  NEW
+ 
         // 초기 스냅샷
         InGameHUDInstance->OnTimerUpdated(GS->RemainingSec);
         InGameHUDInstance->OnScoreUpdated(GS->ThiefWins, GS->PoliceWins);
@@ -431,6 +433,55 @@ void ATUPlayerController::RefreshLobbyFromPS()
     {
         LobbyWidgetInstance->RefreshUI();       // ULobbyWidget 구현 호출
     }
+}
+
+// ===== UI -> 승패판정 =====
+void ATUPlayerController::OnMatchFinished_ShowResult(EInGameTeam WinnerTeam)   //  NEW
+{
+    bool bMineIsThief = false;                                                 // NEW
+    if (const ATPlayerState_InGame* IPS = GetPlayerState<ATPlayerState_InGame>())  //  NEW
+    {                                                                          //  NEW
+        bMineIsThief = (IPS->Team == ETeam::Thief);                            //  NEW
+    }                                                                          //  NEW
+
+    const bool bWin = (WinnerTeam == (bMineIsThief ? EInGameTeam::Thief : EInGameTeam::Police)); //  NEW
+    Client_ShowResult(bWin);                                                   //  NEW
+}
+
+void ATUPlayerController::Client_ShowResult_Implementation(bool bWin)
+{
+    if (bResultShown) return;                 // 중복 표출 방지  //  NEW
+    bResultShown = true;                      //  NEW
+
+    if (!ResultWidgetClass)                   // 에셋 미지정 시 아무 것도 안 뜸
+    {
+        UE_LOG(LogTemp, Error, TEXT("[Result] ResultWidgetClass is NULL! Set WBP_GameResult on PC.")); // ★ NEW
+        return;
+    }
+
+    // 인게임 HUD는 가려주는 걸 권장
+    HideInGameHUD();                          //  NEW
+
+    if (UUserWidget* W = CreateWidget<UUserWidget>(this, ResultWidgetClass))
+    {
+        W->AddToViewport(3000);
+
+        if (UFunction* Fn = W->FindFunction(TEXT("SetResult")))
+        {
+            struct { bool Win; } Params{ bWin };
+            W->ProcessEvent(Fn, &Params);
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("[Result] SetResult(bool) function not found in WBP_GameResult")); //  NEW
+        }
+    }
+
+    // 입력을 UI 전용으로 (선택)
+    SetIgnoreMoveInput(true);
+    SetIgnoreLookInput(true);
+    FInputModeUIOnly Mode; Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+    SetInputMode(Mode); bShowMouseCursor = true;
 }
 
 void ATUPlayerController::PreClientTravel(const FString& PendingURL, ETravelType TravelType, bool bIsSeamlessTravel)

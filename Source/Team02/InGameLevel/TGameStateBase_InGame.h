@@ -16,6 +16,7 @@ enum class EInGameTeam : uint8 { Thief, Police };
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnScoreUpdated, int32, ThiefWins, int32, PoliceWins);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTimerUpdated, int32, RemainingSec);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnKillEvent, const FString&, Killer, const FString&, Victim);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMatchFinished, EInGameTeam, WinnerTeam);      // NEW
 
 UCLASS()
 class TEAM02_API ATGameStateBase_InGame : public AGameStateBase
@@ -47,6 +48,8 @@ public:
     UPROPERTY(BlueprintAssignable) FOnTimerUpdated OnTimerUpdated;
     UPROPERTY(BlueprintAssignable) FOnKillEvent    OnKillEvent;
 
+    UPROPERTY(BlueprintAssignable) FOnMatchFinished  OnMatchFinished;                         // NEW
+
     // RepNotify → HUD 즉시 반영
     UFUNCTION() void OnRep_Score()        { OnScoreUpdated.Broadcast(ThiefWins, PoliceWins); }
     UFUNCTION() void OnRep_RemainingSec() { OnTimerUpdated.Broadcast(RemainingSec); }
@@ -57,8 +60,18 @@ public:
     void AddWin(EInGameTeam TeamWon);
     void BroadcastKill(const FString& Killer, const FString& Victim) { OnKillEvent.Broadcast(Killer, Victim); }
 
+    // 매치 종료 제어(서버에서 호출)                                                //  NEW
+    void FinishMatch(EInGameTeam Winner);                                                   //  NEW
+
+protected:
+    UFUNCTION() void OnRep_MatchFinished();                                                 //  NEW
+
 private:
     FTimerHandle RoundTimerHandle;
+
+    // 매치 종료 복제 상태                                                         //  NEW
+    UPROPERTY(ReplicatedUsing = OnRep_MatchFinished) bool bMatchFinished = false;            //  NEW
+    UPROPERTY(Replicated) EInGameTeam MatchWinner = EInGameTeam::Police;                   //  NEW
 
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

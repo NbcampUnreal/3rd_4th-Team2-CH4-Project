@@ -1,10 +1,11 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
 #include "TTeamTypes.h" // ETeam
 #include "InputActionValue.h" // Enhanced Input
 #include "Kismet/GameplayStatics.h"
+#include "InGameLevel/TGameStateBase_InGame.h" 
 #include "TUPlayerController.generated.h"
 
 class UUserWidget;
@@ -40,6 +41,9 @@ public:
 	
 	UPROPERTY(EditDefaultsOnly, Category = "UI|InGame")
 	TSubclassOf<UTInGameHUD> InGameHUDClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UUserWidget> ResultWidgetClass; // WBP_GameResult   new
 
 	// ===== 인풋 매핑/액션 =====
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
@@ -107,6 +111,9 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Lobby")
 	void BP_UpdateLobbyUI(ETeam Team, bool bReady); // BP에서 텍스트/아이콘 갱신(선택)
 
+	UFUNCTION(Client, Reliable)
+	void Client_ShowResult(bool bWin); // 게임종료 전환
+
 
 private:
 	UPROPERTY() TObjectPtr<UUserWidget>  TitleWidgetInstance = nullptr;
@@ -138,6 +145,8 @@ private:
 
 	// UI
 	UPROPERTY() TObjectPtr<UTInGameHUD> InGameHUDInstance = nullptr;
+	UFUNCTION() void OnMatchFinished_ShowResult(EInGameTeam WinnerTeam); //new
+	UPROPERTY() bool bResultShown = false; //new
 	
 	void ShowInGameHUD();
 	void HideInGameHUD();
