@@ -6,6 +6,7 @@
 #include "InputActionValue.h" // Enhanced Input
 #include "Kismet/GameplayStatics.h"
 #include "InGameLevel/TGameStateBase_InGame.h" 
+#include "InGameUI/TInGameHUD.h"
 #include "TUPlayerController.generated.h"
 
 class UUserWidget;
@@ -147,6 +148,8 @@ private:
 
 	// UI
 	UPROPERTY() TObjectPtr<UTInGameHUD> InGameHUDInstance = nullptr;
+	FTimerHandle StaminaUITimerHandle;   //  NEW
+
 	UFUNCTION() void OnMatchFinished_ShowResult(EInGameTeam WinnerTeam); //new
 	UPROPERTY() bool bResultShown = false; //new
 	

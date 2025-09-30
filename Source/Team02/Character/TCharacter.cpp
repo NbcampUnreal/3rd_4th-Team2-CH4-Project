@@ -86,7 +86,7 @@ void ATCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 			if (PC->MoveAction)   EIC->BindAction(PC->MoveAction, ETriggerEvent::Triggered, this, &ATCharacter::Move);
 			if (PC->LookAction)   EIC->BindAction(PC->LookAction, ETriggerEvent::Triggered, this, &ATCharacter::Look);
 			EIC->BindAction(PC->SprintAction, ETriggerEvent::Started, this, &ATCharacter::SprintStart);
-			EIC->BindAction(PC->SprintAction, ETriggerEvent::Completed, this, &ATCharacter::SprintStop);
+		
 			if (PC->AttackAction)
 			{
 				EIC->BindAction(PC->AttackAction, ETriggerEvent::Started, this, &ATCharacter::AttackStart);
@@ -138,28 +138,30 @@ void ATCharacter::PossessedBy(AController* NewController)
 	UpdateTeamTags();
 }
 
-void ATCharacter::Tick(float DeltaTime)
+void ATCharacter::Tick(float DeltaSeconds)
 {
-	Super::Tick(DeltaTime);
+	Super::Tick(DeltaSeconds);
 
 	if (bIsSprinting)
 	{
-		Stamina -= StaminaDrainRate * DeltaTime;
-		UE_LOG(LogTemp, Warning, TEXT("Stamina: %f"), Stamina);
+		Stamina -= StaminaDrainRate * DeltaSeconds;                   // 소모
 		if (Stamina <= 0.f)
 		{
 			Stamina = 0.f;
-			SprintStop(FInputActionValue(false));
+			bIsSprinting = false;                                     // 0에서만 멈춤
+			bSprintLocked = true;                                     //  회복 완료 전 재시작 금지
+			if (auto* Move = GetCharacterMovement()) Move->MaxWalkSpeed = WalkSpeed;
 		}
 	}
 	else
 	{
 		if (Stamina < MaxStamina)
 		{
-			Stamina += StaminaRecoveryRate * DeltaTime;
-			if (Stamina > MaxStamina)
+			Stamina += StaminaRecoveryRate * DeltaSeconds;           // 회복
+			if (Stamina >= MaxStamina)
 			{
 				Stamina = MaxStamina;
+				bSprintLocked = false;                                // 풀회복 되면 잠금 해제 → 다음 클릭 가능
 			}
 		}
 	}
@@ -197,6 +199,7 @@ bool ATCharacter::CanSprint() const
 
 void ATCharacter::SprintStart(const FInputActionValue& Value)
 {
+	if (bSprintLocked) return;              // 회복 중이면 무시
 	if (!bIsSprinting && CanSprint())
 	{
 		RunningMontagePlay();
@@ -222,6 +225,7 @@ void ATCharacter::SprintStop(const FInputActionValue& Value)
 	}
 	//UpdateMovementSpeed();스피드업이 적용이 안되서 일단 주석처리함
 }
+
 
 void ATCharacter::AttackStart(const FInputActionValue& Value)
 {

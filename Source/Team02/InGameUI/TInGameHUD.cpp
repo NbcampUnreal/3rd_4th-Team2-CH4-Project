@@ -111,51 +111,34 @@ void UTInGameHUD::RefreshStaminaBar()
 {
     if (!StaminaBar) return;
 
-    // 로컬 Pawn 캐시
-    if (!CachedLocalPawn.IsValid())
-    {
-        if (APlayerController* PC = GetOwningPlayer())
-        {
-            CachedLocalPawn = PC->GetPawn();
-        }
-    }
-
     float Ratio = 0.f;
 
-    // 1) 먼저, Pawn에 "GetStaminaRatio()" UFUNCTION이 있으면 호출 (권장: 캐릭터에 BlueprintPure 게터 추가)
-    if (CachedLocalPawn.IsValid())
+    if (APawn* P = GetOwningPlayerPawn())
     {
-        static FName FnName(TEXT("GetStaminaRatio"));
-        if (UFunction* Fn = CachedLocalPawn->FindFunction(FnName))
+        // 1) GetStaminaRatio() 있으면 그것만 신뢰
+        static FName FuncName = TEXT("GetStaminaRatio");
+        if (UFunction* Fn = P->FindFunction(FuncName))
         {
-            struct { float ReturnValue; } Params;
-            CachedLocalPawn->ProcessEvent(Fn, &Params);
-            Ratio = Params.ReturnValue;
+            P->ProcessEvent(Fn, &Ratio);
         }
         else
         {
-            // 2) 게터가 없다면, UPROPERTY로 노출된 "Stamina/MaxStamina"를 리플렉션으로 시도 (없으면 0으로 표시)
-            float Stamina = 0.f, MaxStamina = 0.f;
-
-            if (FProperty* StProp = CachedLocalPawn->GetClass()->FindPropertyByName(TEXT("Stamina")))
+            // 2) (폴백) UPROPERTY로 공개된 Stamina/MaxStamina가 있을 경우만 사용
+            float Cur = 0.f, Max = 0.f;
+            const UClass* Cls = P->GetClass();
+            if (FProperty* CurProp = Cls->FindPropertyByName(TEXT("Stamina")))
             {
-                if (FFloatProperty* FP = CastField<FFloatProperty>(StProp))
-                {
-                    Stamina = FP->GetPropertyValue_InContainer(CachedLocalPawn.Get());
-                }
+                void* ObjPtr = CurProp->ContainerPtrToValuePtr<void>(P);
+                Cur = CastFieldChecked<FFloatProperty>(CurProp)->GetFloatingPointPropertyValue(ObjPtr);
             }
-            if (FProperty* MaxProp = CachedLocalPawn->GetClass()->FindPropertyByName(TEXT("MaxStamina")))
+            if (FProperty* MaxProp = Cls->FindPropertyByName(TEXT("MaxStamina")))
             {
-                if (FFloatProperty* FP = CastField<FFloatProperty>(MaxProp))
-                {
-                    MaxStamina = FP->GetPropertyValue_InContainer(CachedLocalPawn.Get());
-                }
+                void* ObjPtr = MaxProp->ContainerPtrToValuePtr<void>(P);
+                Max = CastFieldChecked<FFloatProperty>(MaxProp)->GetFloatingPointPropertyValue(ObjPtr);
             }
-            if (MaxStamina > 0.f) Ratio = Stamina / MaxStamina;
-            // ※ 현재 프로젝트의 TCharacter에서는 스태미너 멤버가 protected로 선언되어 있어서
-            //    UPROPERTY가 아니면 리플렉션으로 접근 불가할 수 있음(그 경우 0%로 보임). :contentReference[oaicite:4]{index=4}
+            Ratio = (Max > 0.f) ? (Cur / Max) : 0.f;
         }
     }
 
-    StaminaBar->SetPercent(Ratio);
+    StaminaBar->SetPercent(FMath::Clamp(Ratio, 0.f, 1.f)); // ★ NEW: 입력 무시, 값만 반영
 }

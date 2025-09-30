@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -69,9 +69,12 @@ public:
 	float StaminaDrainRate; // 스태미너 소모 속도
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stamina")
 	float StaminaRecoveryRate; // 스태미너 회복 속도
+	UFUNCTION(BlueprintPure, Category = "Stamina")
+	float GetStaminaRatio() const { return (MaxStamina > 0.f) ? (Stamina / MaxStamina) : 0.f; }  //  NEW // 스태미너 게터 
 
 	bool bIsSprinting;
 	bool CanSprint() const;
+	bool bSprintLocked = false; //  회복 중 재스프린트 금지
 
 	// Attack
 	bool bIsAttacking;

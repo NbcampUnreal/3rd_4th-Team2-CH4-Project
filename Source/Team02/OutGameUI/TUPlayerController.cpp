@@ -302,19 +302,19 @@ void ATUPlayerController::ShowInGameHUD()
     }
 
     // 스태미너 Pull 타이머(0.1s)
-    FTimerHandle StaminaTick;
-    GetWorld()->GetTimerManager().SetTimer(
-        StaminaTick,
+    GetWorld()->GetTimerManager().SetTimer(                       // CHANGE (핸들 멤버 사용)
+        StaminaUITimerHandle,                                     // NEW
         FTimerDelegate::CreateWeakLambda(this, [this]()
-        {
-            if (InGameHUDInstance) InGameHUDInstance->RefreshStaminaBar();
-        }),
+            {
+                if (InGameHUDInstance) InGameHUDInstance->RefreshStaminaBar();
+            }),
         0.1f, true
     );
 }
 
 void ATUPlayerController::HideInGameHUD()
 {
+    GetWorld()->GetTimerManager().ClearTimer(StaminaUITimerHandle);   // ★ NEW
     if (InGameHUDInstance)
     {
         InGameHUDInstance->RemoveFromParent();
