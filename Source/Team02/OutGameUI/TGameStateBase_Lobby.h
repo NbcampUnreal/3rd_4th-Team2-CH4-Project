@@ -29,6 +29,9 @@ class TEAM02_API ATGameStateBase_Lobby : public AGameStateBase
 
 public:
 	ATGameStateBase_Lobby();
+
+	UPROPERTY(BlueprintReadOnly, Replicated)
+	bool bCountdownActive = false;
 	
 	UPROPERTY(ReplicatedUsing=OnRep_Phase, BlueprintReadOnly, Category="Lobby")
 	EMatchPhase Phase = EMatchPhase::Waiting;
@@ -41,6 +44,9 @@ public:
 	
 	UPROPERTY(ReplicatedUsing=OnRep_LobbyCountdown, BlueprintReadOnly, Category="Lobby")
 	int32 LobbyCountdown = 0;
+
+	UFUNCTION(BlueprintPure)
+	bool AreAllPlayersReady() const;
 	
 	void RecalcCounts();
 	

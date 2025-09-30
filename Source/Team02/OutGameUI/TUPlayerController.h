@@ -114,6 +114,8 @@ public:
 	UFUNCTION(Client, Reliable)
 	void Client_ShowResult(bool bWin); // 게임종료 전환
 
+	UFUNCTION(Server, Reliable)
+	void Server_SetTeam(ETeam NewTeam);
 
 private:
 	UPROPERTY() TObjectPtr<UUserWidget>  TitleWidgetInstance = nullptr;

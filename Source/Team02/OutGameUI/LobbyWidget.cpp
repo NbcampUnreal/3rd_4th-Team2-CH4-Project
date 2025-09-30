@@ -16,7 +16,8 @@
 void ULobbyWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-	if (BtnTeam)  BtnTeam->OnClicked.AddDynamic(this, &ULobbyWidget::OnClickTeam);
+	if (BtnJoinPolice) BtnJoinPolice->OnClicked.AddDynamic(this, &ULobbyWidget::OnClickJoinPolice);
+	if (BtnJoinThief)  BtnJoinThief ->OnClicked.AddDynamic(this, &ULobbyWidget::OnClickJoinThief);
 	if (BtnReady) BtnReady->OnClicked.AddDynamic(this, &ULobbyWidget::OnClickReady);
 
 	if (HBoxButtons)
@@ -50,78 +51,97 @@ void ULobbyWidget::NativeConstruct()
 
 void ULobbyWidget::RefreshUI()
 {
-	if (ATUPlayerController* PC = GetTUPlayerController())
-	{
-		if (ATPlayerState* TPS = PC->GetPlayerState<ATPlayerState>())
-		{
-			if (TxtTeam)
-			{
-				const TCHAR* TeamStr =
-					(TPS->Team == ETeam::Police) ? TEXT("Police") :
-					(TPS->Team == ETeam::Thief ) ? TEXT("Thief")  : TEXT("None");
-				TxtTeam->SetText(FText::FromString(
-					FString::Printf(TEXT("Team: %s"), TeamStr)));
-			}
-			if (TxtReady)
-			{
-				TxtReady->SetText(TPS->bReady
-					? FText::FromString(TEXT("Ready: YES"))
-					: FText::FromString(TEXT("Ready: NO")));
-			}
-		}
-	}
+    ATUPlayerController* PC = GetTUPlayerController();
+    ATPlayerState* MyPS = PC ? PC->GetPlayerState<ATPlayerState>() : nullptr;
 
-	if (UWorld* W = GetWorld())
-	{
-		if (ATGameStateBase_Lobby* GS = W->GetGameState<ATGameStateBase_Lobby>())
-		{
-			// 합계 표시
-			if (TxtTotals)
-			{
-				TxtTotals->SetText(FText::FromString(
-					FString::Printf(TEXT("Ready %d / %d"), GS->GetReadyCount(), GS->GetTotalPlayers())));
-			}
+    // 본인 상태 텍스트 (기존처럼)
+    if (MyPS && TxtTeam && TxtReady)
+    {
+        const TCHAR* TeamStr = (MyPS->Team == ETeam::Police) ? TEXT("Police")
+                             : (MyPS->Team == ETeam::Thief)  ? TEXT("Thief")
+                                                             : TEXT("None");
+        TxtReady->SetText(MyPS->bReady ? FText::FromString(TEXT("Ready: YES"))
+                                       : FText::FromString(TEXT("Ready: NO")));
+    }
 
-			if (TxtCountdown)  // UTextBlock* TxtCountdown 를 BP에 추가해야 함
-			{
-				TxtCountdown->SetText(FText::FromString(
-					FString::Printf(TEXT("Match starts in: %d"), GS->LobbyCountdown)));
-			}
+    // 좌/우 컬럼 재빌드
+    if (ListPolice) ListPolice->ClearChildren();
+    if (ListThief ) ListThief ->ClearChildren();
 
-			// 전체 목록 표시
-			if (VBoxPlayers)
-			{
-				VBoxPlayers->ClearChildren();
+    if (UWorld* W = GetWorld())
+    {
+        if (ATGameStateBase_Lobby* GS = W->GetGameState<ATGameStateBase_Lobby>())
+        {
+            // 합계/카운트다운 (기존)
+            if (TxtTotals)
+            {
+                TxtTotals->SetText(FText::FromString(
+                    FString::Printf(TEXT("Ready %d / %d"), GS->GetReadyCount(), GS->GetTotalPlayers())));
+            }
+        	
+        	if (TxtCountdown)
+        	{
+        		if (GS->bCountdownActive)
+        		{
+        			TxtCountdown->SetVisibility(ESlateVisibility::Visible);
+        			TxtCountdown->SetText(FText::AsNumber(GS->LobbyCountdown));
+        		}
+        		else
+        		{
+        			TxtCountdown->SetVisibility(ESlateVisibility::Collapsed);
+        		}
+        	}
 
-				for (APlayerState* PS : GS->PlayerArray)
-				{
-					if (ATPlayerState* TPS = Cast<ATPlayerState>(PS))
-					{
-						const TCHAR* TeamStr =
-							(TPS->Team == ETeam::Police) ? TEXT("Police") :
-							(TPS->Team == ETeam::Thief ) ? TEXT("Thief")  : TEXT("None");
+            // 각 팀별로 라인 추가
+            for (APlayerState* PSBase : GS->PlayerArray)
+            {
+                if (ATPlayerState* TPS = Cast<ATPlayerState>(PSBase))
+                {
+                    const bool bLocal = (TPS == MyPS);
+                    const FString Nick = PSBase->GetPlayerName();
+                    const FString Line = FString::Printf(TEXT("%s%s  %s"),
+                        *Nick,
+                        bLocal ? TEXT(" (You)") : TEXT(""),
+                        TPS->bReady ? TEXT("[READY]") : TEXT(""));
 
-						const FString Line = FString::Printf(
-							TEXT("%s   |   Team: %s   |   Ready: %s"),
-							*PS->GetPlayerName(),
-							TeamStr,
-							TPS->bReady ? TEXT("YES") : TEXT("NO"));
+                    UTextBlock* Row = NewObject<UTextBlock>(this);
+                    Row->SetText(FText::FromString(Line));
 
-						UTextBlock* Row = NewObject<UTextBlock>(this);
-						Row->SetText(FText::FromString(Line));
-						VBoxPlayers->AddChild(Row);
-					}
-				}
-			}
-		}
-	}
+                    if (TPS->Team == ETeam::Police)
+                    {
+                        if (ListPolice) ListPolice->AddChild(Row);
+                    }
+                    else if (TPS->Team == ETeam::Thief)
+                    {
+                        if (ListThief) ListThief->AddChild(Row);
+                    }
+                }
+            }
+        }
+    }
+
+    // 레디면 팀 이동 버튼 비활성화
+    const bool bReady = MyPS ? MyPS->bReady : false;
+    if (BtnJoinPolice) BtnJoinPolice->SetIsEnabled(!bReady);
+    if (BtnJoinThief ) BtnJoinThief ->SetIsEnabled(!bReady);
+
+    InvalidateLayoutAndVolatility();
+    ForceLayoutPrepass();
 }
 
-void ULobbyWidget::OnClickTeam()
+void ULobbyWidget::OnClickJoinPolice()
 {
 	if (ATUPlayerController* PC = GetTUPlayerController())
 	{
-		PC->Server_CycleTeam();
+		PC->Server_SetTeam(ETeam::Police);
+	}
+}
+
+void ULobbyWidget::OnClickJoinThief()
+{
+	if (ATUPlayerController* PC = GetTUPlayerController())
+	{
+		PC->Server_SetTeam(ETeam::Thief);
 	}
 }
 

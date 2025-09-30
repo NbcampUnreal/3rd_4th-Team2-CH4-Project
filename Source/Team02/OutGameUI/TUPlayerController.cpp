@@ -420,6 +420,19 @@ void ATUPlayerController::Server_SetReady_Implementation(bool bReadyDesired)
     }
 }
 
+void ATUPlayerController::Server_SetTeam_Implementation(ETeam NewTeam)
+{
+    if (ATPlayerState* PS = GetPlayerState<ATPlayerState>())
+    {
+        if (!PS->bReady)
+        {
+            PS->SetTeam(NewTeam);
+            UE_LOG(LogTemp, Warning, TEXT("[Lobby][Server] SetTeam -> %d (Player=%s)"),
+                static_cast<int32>(NewTeam), *PS->GetPlayerName());
+        }
+    }
+}
+
 // ===== 로비 상태 → UI 갱신 브릿지 =====
 void ATUPlayerController::RefreshLobbyFromPS()
 {

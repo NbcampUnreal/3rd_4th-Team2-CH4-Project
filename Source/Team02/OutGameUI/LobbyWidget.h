@@ -17,7 +17,8 @@ class TEAM02_API ULobbyWidget : public UUserWidget
 public:
 	virtual void NativeConstruct() override;
 
-	UPROPERTY(meta=(BindWidget)) UButton* BtnTeam = nullptr;
+	UPROPERTY(meta=(BindWidget)) UButton* BtnJoinPolice = nullptr;
+	UPROPERTY(meta=(BindWidget)) UButton* BtnJoinThief  = nullptr;
 	UPROPERTY(meta=(BindWidget)) UButton* BtnReady = nullptr;
 
 	UPROPERTY(meta=(BindWidget)) UTextBlock* TxtTeam = nullptr;
@@ -26,6 +27,9 @@ public:
 	UPROPERTY(meta=(BindWidget)) UTextBlock* TxtTotals = nullptr;
 	UPROPERTY(meta=(BindWidget)) UVerticalBox* VBoxPlayers = nullptr;
 
+	UPROPERTY(meta=(BindWidget)) UVerticalBox* ListPolice = nullptr;
+	UPROPERTY(meta=(BindWidget)) UVerticalBox* ListThief  = nullptr;
+	
 	UPROPERTY(meta=(BindWidget)) UTextBlock* TxtCountdown = nullptr; 
 	
 	UFUNCTION(BlueprintCallable) void RefreshUI();
@@ -33,7 +37,8 @@ public:
 	UPROPERTY(meta=(BindWidget)) class UHorizontalBox* HBoxButtons = nullptr;
 
 private:
-	UFUNCTION() void OnClickTeam();
+	UFUNCTION() void OnClickJoinPolice();
+	UFUNCTION() void OnClickJoinThief();
 	UFUNCTION() void OnClickReady();
 	class ATUPlayerController* GetTUPlayerController() const;
 };
