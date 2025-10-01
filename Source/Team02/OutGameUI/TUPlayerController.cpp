@@ -314,7 +314,7 @@ void ATUPlayerController::ShowInGameHUD()
 
 void ATUPlayerController::HideInGameHUD()
 {
-    GetWorld()->GetTimerManager().ClearTimer(StaminaUITimerHandle);   // ★ NEW
+    GetWorld()->GetTimerManager().ClearTimer(StaminaUITimerHandle);   // NEW
     if (InGameHUDInstance)
     {
         InGameHUDInstance->RemoveFromParent();
@@ -468,7 +468,7 @@ void ATUPlayerController::Client_ShowResult_Implementation(bool bWin)
 
     if (!ResultWidgetClass)                   // 에셋 미지정 시 아무 것도 안 뜸
     {
-        UE_LOG(LogTemp, Error, TEXT("[Result] ResultWidgetClass is NULL! Set WBP_GameResult on PC.")); // ★ NEW
+        UE_LOG(LogTemp, Error, TEXT("[Result] ResultWidgetClass is NULL! Set WBP_GameResult on PC.")); // NEW
         return;
     }
 

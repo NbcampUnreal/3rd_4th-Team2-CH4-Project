@@ -2,13 +2,13 @@
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "Components/HorizontalBox.h"
-#include "Components/HorizontalBoxSlot.h"   // NEW
+#include "Components/HorizontalBoxSlot.h"   
 #include "Components/VerticalBox.h"
 #include "Components/Image.h"
 #include "Blueprint/WidgetTree.h"
 #include "GameFramework/PlayerController.h"
 #include "UObject/UnrealType.h" // 리플렉션(FProperty) 접근용
-#include "InGameLevel/TGameStateBase_InGame.h" // // NEW (WinsToFinish 읽기용)
+#include "InGameLevel/TGameStateBase_InGame.h" // (WinsToFinish 읽기용)
 
 void UTInGameHUD::OnTimerUpdated(int32 RemainingSec)
 {
@@ -33,35 +33,35 @@ void UTInGameHUD::PaintWinDots(UHorizontalBox* Box, int32 Wins)
     // CHANGE: GameState의 WinsToFinish(기본 3)를 읽어서 총 개수를 결정하고,
     // i < Wins → '●', 그 외 → '○' 로 표기
     int32 WinsToFinish = 3; // 기본값
-    if (const ATGameStateBase_InGame* GS = GetWorld() ? GetWorld()->GetGameState<ATGameStateBase_InGame>() : nullptr)  // NEW
+    if (const ATGameStateBase_InGame* GS = GetWorld() ? GetWorld()->GetGameState<ATGameStateBase_InGame>() : nullptr) 
     {
-        WinsToFinish = GS->WinsToFinish; //  NEW
+        WinsToFinish = GS->WinsToFinish; 
     }
 
-    PaintTeamDots(Box, Wins, WinsToFinish); //  NEW
+    PaintTeamDots(Box, Wins, WinsToFinish); 
 }
 
-// NEW: 텍스트 도트로 그리기(필요하면 UImage로 바꿔도 됨)
+// 텍스트 도트로 그리기(필요하면 UImage로 바꿔도 됨)
 void UTInGameHUD::PaintTeamDots(UHorizontalBox* Box, int32 Wins, int32 WinsToFinish)
 {
     if (!Box) return;
-    Box->ClearChildren(); //  NEW
+    Box->ClearChildren();
 
-    for (int32 i = 0; i < WinsToFinish; ++i) //  NEW
+    for (int32 i = 0; i < WinsToFinish; ++i)
     {
-        UTextBlock* Dot = NewObject<UTextBlock>(Box); //  NEW
-        const bool bFilled = (i < Wins);              //  NEW
-        Dot->SetText(FText::FromString(bFilled ? TEXT("●") : TEXT("○"))); //  NEW
-        Dot->SetJustification(ETextJustify::Center);  //  NEW
+        UTextBlock* Dot = NewObject<UTextBlock>(Box); 
+        const bool bFilled = (i < Wins);              
+        Dot->SetText(FText::FromString(bFilled ? TEXT("●") : TEXT("○"))); 
+        Dot->SetJustification(ETextJustify::Center); 
 
-        // ★ NEW: 글자 크기로 원 크기 조절
+        // 글자 크기로 원 크기 조절
         FSlateFontInfo FontInfo = Dot->Font;
         FontInfo.Size = 64;              // 원하는 크기 (기본은 12~24 정도)
         Dot->SetFont(FontInfo);
 
-        if (UHorizontalBoxSlot* DotSlot = Box->AddChildToHorizontalBox(Dot)) //  NEW
+        if (UHorizontalBoxSlot* DotSlot = Box->AddChildToHorizontalBox(Dot)) 
         {
-            DotSlot->SetPadding(FMargin(2.f, 0.f)); //  NEW
+            DotSlot->SetPadding(FMargin(2.f, 0.f)); 
         }
     }
 }
@@ -140,5 +140,96 @@ void UTInGameHUD::RefreshStaminaBar()
         }
     }
 
-    StaminaBar->SetPercent(FMath::Clamp(Ratio, 0.f, 1.f)); // ★ NEW: 입력 무시, 값만 반영
+    StaminaBar->SetPercent(FMath::Clamp(Ratio, 0.f, 1.f)); //입력 무시, 값만 반영
+}
+
+void UTInGameHUD::NativeConstruct()
+{
+    Super::NativeConstruct();
+
+    // GameState 델리게이트 바인딩
+    if (APlayerController* PC = GetOwningPlayer())
+    {
+        if (UWorld* W = PC->GetWorld())
+        {
+            if (ATGameStateBase_InGame* GS = W->GetGameState<ATGameStateBase_InGame>())
+            {
+                GS->OnKillLog.AddDynamic(this, &UTInGameHUD::HandleKillLogToHUD); // ★ NEW
+            }
+        }
+    }
+}
+
+void UTInGameHUD::HandleKillLogToHUD(const FKillLogEntry& Entry)   // ★ NEW
+{
+    AddKillLogTextLine(Entry);
+}
+
+FString UTInGameHUD::TeamToLabel(ETeam Team)                        // ★ NEW
+{
+    switch (Team)
+    {
+    case ETeam::Police: return TEXT("Police");
+    case ETeam::Thief:  return TEXT("Thief");
+    default:            return TEXT("Unknown");
+    }
+}
+
+void UTInGameHUD::AddKillLogTextLine(const FKillLogEntry& Entry)   // ★ NEW
+{
+    if (!KillLogBox) return;
+
+    // 라벨 만들기: Killer = Police/Thief/Unknown, Victim = Thief/Police/NPC
+    const FString KillerLabel = TeamToLabel(Entry.KillerTeam);      // Police / Thief / Unknown
+    const FString VictimLabel = Entry.bVictimIsAI
+        ? TEXT("NPC")
+        : TeamToLabel(Entry.VictimTeam);                            // Thief / Police / Unknown
+
+    const FString Line = FString::Printf(TEXT("%s ➠ %s"), *KillerLabel, *VictimLabel);
+
+    UTextBlock* TB = NewObject<UTextBlock>(this, UTextBlock::StaticClass());
+    if (!TB) return;
+
+    TB->SetText(FText::FromString(Line));
+    TB->SetJustification(ETextJustify::Left);
+    TB->SetAutoWrapText(false);
+    TB->SetColorAndOpacity(FSlateColor(FLinearColor(0.808f, 0.776f, 0.518f, 1.0f))); //  킬로그 금색 적용
+
+    // (선택) 색상 톤: Killer/ Victim 팀별로 강조하고 싶다면 여기서 SetColorAndOpacity
+    // 예) Police 파란, Thief 빨강, NPC 회색 등
+    // if (Entry.bVictimIsAI) { TB->SetColorAndOpacity(FSlateColor(FLinearColor(0.7f,0.7f,0.7f,1))); }
+
+    // 최신 ↑ 위에 쌓기: 맨 앞에 삽입
+    KillLogBox->AddChild(TB);
+    KillLogBox->InsertChildAt(0, TB);
+
+    // 최대 줄 수 넘으면 맨 아래(가장 오래된 것) 제거
+    while (KillLogBox->GetChildrenCount() > MaxKillLines)
+    {
+        if (UWidget* Oldest = KillLogBox->GetChildAt(KillLogBox->GetChildrenCount() - 1))
+        {
+            Oldest->RemoveFromParent();
+        }
+    }
+
+    // 일정 시간 뒤 자동 제거 (간단 버전)
+    if (UWorld* W = GetWorld())
+    {
+        TWeakObjectPtr<UTextBlock> WeakTB = TB;
+        FTimerHandle Tmp;
+        W->GetTimerManager().SetTimer(
+            Tmp,
+            FTimerDelegate::CreateLambda([WeakTB]()
+                {
+                    if (WeakTB.IsValid())
+                    {
+                        if (UWidget* Widget = WeakTB.Get())
+                        {
+                            Widget->RemoveFromParent();
+                        }
+                    }
+                }),
+            LineLifeSeconds, false
+        );
+    }
 }

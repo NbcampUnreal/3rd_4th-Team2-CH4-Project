@@ -3,6 +3,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Components/HorizontalBox.h"
 #include "Components/TextBlock.h"
+#include "InGameLevel/TGameStateBase_InGame.h"  
 #include "TInGameHUD.generated.h"
 
 class UProgressBar; class UTextBlock; class UHorizontalBox; class UVerticalBox;
@@ -29,6 +30,16 @@ public:
     // 캐릭터의 스태미너 비율을 Pull하여 ProgressBar 갱신 
     UFUNCTION(BlueprintCallable, Category = "UI") void RefreshStaminaBar();
 
+    virtual void NativeConstruct() override;
+    // --- KillLog UI ---
+    UPROPERTY(meta = (BindWidget)) UVerticalBox* KillLogBox = nullptr; //  (WBP_InGameHUD 안의 KillLogBox와 이름 일치)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "KillLog")
+    int32 MaxKillLines = 6;                                        // ★ NEW
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "KillLog")
+    float LineLifeSeconds = 4.0f;                                  // ★ NEW
+
+    UFUNCTION() void HandleKillLogToHUD(const FKillLogEntry& Entry);   // ★ NEW
+
 protected:
     // BindWidget: BP_InGameHUD에서 동일한 이름으로 위젯을 배치해야 자동 연결됨
     UPROPERTY(meta = (BindWidget)) UProgressBar* StaminaBar = nullptr;
@@ -36,7 +47,7 @@ protected:
     UPROPERTY(meta = (BindWidget)) UTextBlock* RoundText = nullptr;
     UPROPERTY(meta = (BindWidget)) UHorizontalBox* ThiefWinsBox = nullptr;
     UPROPERTY(meta = (BindWidget)) UHorizontalBox* PoliceWinsBox = nullptr;
-    UPROPERTY(meta = (BindWidget)) UVerticalBox* KillLogBox = nullptr;
+    
 
     //(옵션) 킬로그 한 줄짜리 BP 위젯 클래스 
     UPROPERTY(EditDefaultsOnly, Category = "UI")
@@ -52,5 +63,9 @@ private:
     void PaintWinDots(UHorizontalBox* Box, int32 Wins); // // CHANGE: 내부 로직 변경(고정 3개 → WinsToFinish개, ○/●)
 
     // 새 헬퍼: 팀 한 줄을 WinsToFinish개 도트로 그리기(○/●)
-    void PaintTeamDots(UHorizontalBox* Box, int32 Wins, int32 WinsToFinish); //  NEW
+    void PaintTeamDots(UHorizontalBox* Box, int32 Wins, int32 WinsToFinish); 
+
+    // --- KillLog UI ---
+    void AddKillLogTextLine(const FKillLogEntry& Entry);           // ★ NEW
+    static FString TeamToLabel(ETeam Team);                        // ★ NEW
 };
