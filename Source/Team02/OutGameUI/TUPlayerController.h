@@ -118,6 +118,9 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_SetTeam(ETeam NewTeam);
 
+	UFUNCTION(Server, Reliable)
+	void Server_ReturnToTitle();  // 모든 플레이어를 타이틀로
+
 private:
 	UPROPERTY() TObjectPtr<UUserWidget>  TitleWidgetInstance = nullptr;
 	UPROPERTY() TObjectPtr<ULobbyWidget> LobbyWidgetInstance = nullptr;

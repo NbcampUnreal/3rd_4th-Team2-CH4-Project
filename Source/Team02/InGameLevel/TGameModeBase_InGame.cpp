@@ -414,6 +414,15 @@ void ATGameModeBase_InGame::EndMatchAndShowResult()
 void ATGameModeBase_InGame::BeginPlay()
 {
     Super::BeginPlay();
+
+    if (HasAuthority())
+    {
+        if (ATGameStateBase_InGame* GS = GetGameState<ATGameStateBase_InGame>())
+        {
+            GS->ResetMatchState(/*WinsToFinish*/3, /*MaxRounds*/5, /*RoundSeconds*/RoundSeconds);
+        }
+    }
+
     UE_LOG(LogTemp, Warning, TEXT("[InGameGM] BeginPlay - TryStartRoundIfReady()"));
     TryStartRoundIfReady(); // SeamlessTravel로 들어와도 첫 틱에서 한 번 시도
 }

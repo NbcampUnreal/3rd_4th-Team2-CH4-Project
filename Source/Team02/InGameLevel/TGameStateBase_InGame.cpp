@@ -78,3 +78,27 @@ void ATGameStateBase_InGame::MulticastKillLog_Implementation(const FKillLogEntry
 {
     OnKillLog.Broadcast(Entry);   // 모든 클라 HUD로 알림                      // NEW
 }
+
+void ATGameStateBase_InGame::ResetMatchState(int32 InWinsToFinish, int32 InMaxRounds, int32 InRoundSeconds)
+{
+    if (!HasAuthority()) return;
+
+    GetWorldTimerManager().ClearTimer(RoundTimerHandle);
+
+    WinsToFinish = InWinsToFinish;
+    MaxRounds = InMaxRounds;
+
+    ThiefWins = 0;
+    PoliceWins = 0;
+    CurrentRound = 1;
+
+    RemainingSec = InRoundSeconds;
+
+    // 핵심: 이전 매치 종료 플래그 클리어
+    bMatchFinished = false;
+    MatchWinner = EInGameTeam::Police; // 디폴트
+
+    // HUD 초기 스냅샷 브로드캐스트
+    OnRep_Score();
+    OnRep_RemainingSec();
+}

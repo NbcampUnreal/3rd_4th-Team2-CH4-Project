@@ -80,6 +80,9 @@ public:
     void AddWin(EInGameTeam TeamWon);
     void BroadcastKill(const FString& Killer, const FString& Victim) { OnKillEvent.Broadcast(Killer, Victim); }
 
+    UFUNCTION(BlueprintCallable)
+    void ResetMatchState(int32 InWinsToFinish = 3, int32 InMaxRounds = 5, int32 InRoundSeconds = 180);
+
     // 매치 종료 제어(서버에서 호출)                                             
     void FinishMatch(EInGameTeam Winner);      
 

@@ -499,8 +499,21 @@ void ATUPlayerController::Client_ShowResult_Implementation(bool bWin)
 
 void ATUPlayerController::PreClientTravel(const FString& PendingURL, ETravelType TravelType, bool bIsSeamlessTravel)
 {
+    bResultShown = false;
     UE_LOG(LogTemp, Warning, TEXT("[CLIENT][PC] PreClientTravel URL=%s Type=%d Seamless=%d"),
         *PendingURL, (int)TravelType, bIsSeamlessTravel);
 
     Super::PreClientTravel(PendingURL, TravelType, bIsSeamlessTravel);
+}
+
+void ATUPlayerController::Server_ReturnToTitle_Implementation()
+{
+    if (UWorld* W = GetWorld())
+    {
+        // 타이틀로 모두 이동 (listen 서버 기준)
+        // 필요 시 로비로 보내고 싶으면 맵 경로를 로비맵으로 교체
+        const FString Url = TEXT("/Game/Team02/OutGameUI/Map/Title?listen");
+        UE_LOG(LogTemp, Warning, TEXT("[Result] ServerTravel -> %s"), *Url);
+        W->ServerTravel(Url, /*bAbsolute=*/true);
+    }
 }
