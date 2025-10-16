@@ -1,0 +1,55 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#include "Gimmick/TSpeedup.h"
+#include "Components/SphereComponent.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "TimerManager.h"
+#include "Character/TCharacter.h"
+
+// Sets default values
+ATSpeedup::ATSpeedup()
+{
+	PrimaryActorTick.bCanEverTick = false;
+	bReplicates = true;
+
+	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
+	SetRootComponent(SphereComponent);
+	SphereComponent->SetSphereRadius(1000.0f);
+
+	// Explicitly set collision to overlap with Pawns
+	SphereComponent->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+	SphereComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	SphereComponent->SetGenerateOverlapEvents(true);
+	SphereComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	SphereComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+
+	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
+	MeshComponent->SetupAttachment(GetRootComponent());
+	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+// Called when the game starts or when spawned
+void ATSpeedup::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// Bind the overlap event only on the server
+	if (HasAuthority())
+	{
+		SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &ATSpeedup::OnSphereOverlap);
+	}
+}
+
+void ATSpeedup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	ATCharacter* TChar = Cast<ATCharacter>(OtherActor);
+	if (TChar && TChar->ActorHasTag(FName("Hider")))
+	{
+		// Apply speed buff through TCharacter's function
+		TChar->ApplySpeedBuff(SpeedMultiplier, BuffDuration);
+
+		// Gimmick is consumed, destroy it.
+		Destroy();
+	}
+}
