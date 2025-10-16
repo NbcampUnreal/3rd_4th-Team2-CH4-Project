@@ -472,7 +472,7 @@ WBP_InGameHUD
   <tr>
     <td><b>김예준</b></td>
     <td>부팀장</td>
-    <td>NPC (AI 시스템)</td>
+    <td>NPC (AI 시스템),ReadMe작성</td>
     <td>
       • AI 성격 시스템 설계<br>
       • Behavior Tree 구현<br>
